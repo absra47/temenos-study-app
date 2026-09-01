@@ -1186,6 +1186,1112 @@ const CONCEPTS = {
     temenos: "Controlled in AA.PARAMETER (Simulation tab); Capture → Runner; can suppress/assign account numbers; MORTGAGE.ARM still stores COMMITMENT/SCHEDULE.",
     related: ["aa3sim", "aai2storage"],
   },
+
+  // ============ COURSE 6 · AA Common Building Blocks Implementation — Part 1 ============
+  // ---- Section 1: Product Overview & Dependencies ----
+  cb1overview: {
+    title: "Lending, Deposit & Account Arrangements",
+    simple: "The same Arrangement Architecture engine builds three arrangement families — Lending, Deposits and Accounts — from shared components.",
+    example: "A personal loan, a term deposit and a current account are all AA arrangements; they reuse the same property classes for interest, charges and accounting.",
+    why: "One reusable engine means a new deposit product costs a fraction of building a separate module.",
+    memory: "One engine, three arrangement families.",
+    temenos: "Each family has its own Product Line (LENDING, DEPOSITS, ACCOUNTS) but draws on the same common property classes and activities.",
+    related: ["cb1deps", "cb1tables", "aa2prodline"],
+  },
+  cb1deps: {
+    title: "AA Dependencies",
+    simple: "AA relies on other Transact modules and static tables to work: CUSTOMER, ACCOUNT, Delivery, Accounting and Limits, plus currency and calendar tables.",
+    example: "Opening a loan needs a CUSTOMER record for the borrower, creates an ACCOUNT, posts entries through Accounting and can check a Limit.",
+    why: "AA is a product engine, not a whole core — it plugs into the rest of Transact.",
+    memory: "AA borrows: Customer, Account, Delivery, Accounting, Limits.",
+    temenos: "Limits apply to the Lending and Accounts product lines; Delivery handles advices; currency conditions read CURRENCY, CURRENCY.PARAM and CURRENCY.MARKET.",
+    related: ["cb1overview", "cb1currency", "aa3deps"],
+  },
+  cb1daybasis: {
+    title: "Interest Day Basis",
+    simple: "A code that fixes how many days are in an interest period and in a year for interest calculation.",
+    example: "Basis 'A' = 30/360; 'E' = actual/365. The same rate gives a different amount depending on the basis.",
+    why: "Interest maths must be unambiguous and consistent with the market convention for the product.",
+    memory: "Day basis = the calendar rule for interest.",
+    temenos: "Codes A (30/360), B (actual/360), E (actual/365), plus regional variants; set on the interest property condition.",
+    related: ["cb1deps", "aa3daybasis"],
+  },
+  cb1currency: {
+    title: "Currency, Countries & Calendars",
+    simple: "Product conditions can be made currency-specific, and holidays for named countries/regions are checked when an arrangement runs.",
+    example: "A USD condition set differs from the GBP one; a payment due on a US holiday is moved because USD is linked to US BUS.DAY.CENTRES.",
+    why: "Global products need per-currency terms and must respect each market's working calendar.",
+    memory: "Currency drives the terms; BUS.DAY.CENTRES drives the dates.",
+    temenos: "BUS.DAY.CENTRES field in the Account product condition; CURRENCY field in AA.PRODUCT.DESIGNER sets the default currency (also from COMPANY).",
+    related: ["cb1deps", "cb1daybasis"],
+  },
+
+  // ---- Section 2: Reusable Component Tables ----
+  cb1tables: {
+    title: "Tables for Building Reusable Components",
+    simple: "A fixed set of tables holds the building blocks: AA.PROPERTY.CLASS, AA.PROPERTY, AA.PERIODIC.ATTRIBUTE.CLASS, AA.PERIODIC.ATTRIBUTE, AA.ACTIVITY.CLASS, AA.ACTIVITY and AA.PRD.DES.<class>.",
+    example: "To add a new negotiable field you create an AA.PROPERTY of an existing class, then reference it in AA.PRD.DES.<class> product conditions.",
+    why: "Knowing which table holds what lets an implementer extend a product without touching code.",
+    memory: "Class = Temenos block; Property/Attribute/Activity = client-named instances.",
+    temenos: "Temenos releases the *.CLASS tables; clients create instances. AA.SOURCE.CALC.TYPE and AA.PROPERTY.CLASS.ACTION support them.",
+    related: ["cb1propclass", "cb1property", "cb1prodcond", "aai1buildchain"],
+  },
+  cb1propclass: {
+    title: "AA.PROPERTY.CLASS",
+    simple: "A Temenos-released block that defines the Actions and Attributes available to any Property built from it.",
+    example: "The INTEREST property class defines attributes like rate, day basis and tier type, and actions like ACCRUE and CAPITALISE.",
+    why: "It's the contract: every property of that class shares the same fields and behaviour.",
+    memory: "Property Class = the mould; Property = the casting.",
+    temenos: "Attributes are governed by the TYPE field (e.g. DATED, TRACKING, VARIATION, TRIGGER); clients may only edit the description.",
+    related: ["cb1property", "cb1prodcond", "aai1propclass"],
+  },
+  cb1property: {
+    title: "AA.PROPERTY",
+    simple: "A client-named instance of a property class, attached to the Product Group where it is first used.",
+    example: "PRINCIPALINT and PENALTYINT are two properties of the INTEREST class on the same lending product.",
+    why: "Multiple properties of one class let a product carry, say, several interest streams.",
+    memory: "Same class, different names, different balances.",
+    temenos: "Property types include Suspend, Suspend Overdue, Residual, Variation, Forward Dated, Unamortised, Credit, Trigger, Commission, Accrual by Bills — or null (normal).",
+    related: ["cb1propclass", "cb1prodcond", "aai1property"],
+  },
+  cb1prodcond: {
+    title: "Product Condition (Reusable Components)",
+    simple: "The record that assigns real values to a property class's attributes for one product; its ID carries currency, variation and effective date.",
+    example: "Product Conditions - INTEREST_PRINCIPALINT-USD-20200102 holds the USD rate and rules for the principal-interest property.",
+    why: "Product conditions are what make one product differ from another.",
+    memory: "Product Condition = the filled-in form for one property.",
+    temenos: "Stored per property class in AA.PRD.DES.<class>; ID = <class>_<property>-<currency>-<yyyymmdd>; fields mirror the class's attributes.",
+    related: ["cb1propclass", "cb1negotiable", "cb1attropt"],
+  },
+
+  // ---- Section 3: Product Condition Options ----
+  cb1negotiable: {
+    title: "DEFAULT.NEGOTIABLE",
+    simple: "A mandatory Yes/No on each product condition saying whether the arrangement-maker can change its attribute values.",
+    example: "DEFAULT.NEGOTIABLE = No on the term means users take the product term as-is; Yes lets them negotiate within any rules set.",
+    why: "It's the master switch for how much freedom the front office has on a product.",
+    memory: "Negotiable = 'can the user touch this?'",
+    temenos: "Attribute-level negotiation rules (NR.*) always override this class-wide default.",
+    related: ["cb1prodcond", "cb1nrrules", "aai1prodcond"],
+  },
+  cb1attropt: {
+    title: "DEFAULT.ATTR.OPTION (Resetting / Non-Resetting)",
+    simple: "Controls whether negotiated arrangement values are wiped back to the product on rollover/reset, or kept.",
+    example: "RESETTING — at renewal the arrangement's rate reverts to the product rate; NON-RESETTING — the negotiated rate stays.",
+    why: "Decides whether a special deal is a one-off or sticks for the life of the arrangement.",
+    memory: "Resetting = snap back to product; Non-resetting = keep the deal.",
+    temenos: "Optional field on the product condition; applies at rollover, reset and change-product activities.",
+    related: ["cb1prodcond", "cb1negotiable"],
+  },
+  cb1nrrules: {
+    title: "Negotiation Rules (NR.* fields)",
+    simple: "Per-attribute rules that define exactly how a value may be changed in an arrangement: negotiable, mandatory, override, fix-value and the comparison to apply.",
+    example: "Amount is NEGOTIABLE with MAXIMUM 500,000 (ERROR) and MINIMUM 25,000 (OVERRIDE) — above 500k is blocked, below 25k warns.",
+    why: "Fine-grained control: some fields locked, some free within a band, some just warn.",
+    memory: "NR = the rulebook for each field's wiggle room.",
+    temenos: "NR.ATTRIBUTE / NR.OPTION / NR.TYPE(MAX,MIN,SINGLE) / NR.VALUE / NR.MESSAGE(ERROR,OVERRIDE); NR.VALUE.SOURCE reads a balance dynamically (BALANCE.TYPE>Name); NR.TYPE values validate against EB.COMPARISON.TYPE.",
+    related: ["cb1negotiable", "cb1prodcond"],
+  },
+
+  // ---- Section 4: Customer Property Class ----
+  cb1customer: {
+    title: "CUSTOMER Property Class",
+    simple: "The common property class that links customers to an arrangement and holds their roles and limits.",
+    example: "On a joint loan the CUSTOMER property records both applicants, marks one as the first beneficial owner and sets each one's limit reference.",
+    why: "Every arrangement needs to know who owns it and in what capacity.",
+    memory: "CUSTOMER property = who's on the deal.",
+    temenos: "Attributes governed by TYPE (DATED, TRACKING, VARIATION, ENABLE.EXTERNAL, ENABLE.EXTERNAL.FINANCIAL); balance prefix null.",
+    related: ["cb1custrole", "cb1benefowner", "aa2roles"],
+  },
+  cb1custrole: {
+    title: "AA.CUSTOMER.ROLE",
+    simple: "Defines each customer role that can sit on an arrangement — Applicant, Guarantor, Beneficiary, etc. — and its rules.",
+    example: "The APPLICANT role is a taxable customer, may have a limit, and its max tax-liability percentage can be set.",
+    why: "Roles carry different rights and accounting/tax treatment.",
+    memory: "One record per role, per arrangement type.",
+    temenos: "Fields include Taxable Customer, Has Tax Liab Perc, Limit Customer, Min/Max Limit Perc, Relationship Pricing Customer, Delivery Customer, Exclude Dormancy, Maintain Info.",
+    related: ["cb1customer", "cb1benefowner", "cb1relpricing"],
+  },
+  cb1benefowner: {
+    title: "Beneficial vs Non-Beneficial Owner",
+    simple: "The first beneficial owner on an arrangement is the one used for accounting, tax and limits; others can be indicated too.",
+    example: "A trust arrangement lists the trustee as applicant but the beneficiary as first beneficial owner — that's whose tax position applies.",
+    why: "Regulation and accounting need one clear 'real' owner even when several parties are named.",
+    memory: "First beneficial owner = the one the books care about.",
+    temenos: "Set on AA.CUSTOMER.ROLE / the CUSTOMER product condition; typically Negotiable at arrangement level; the owner can be changed by an activity.",
+    related: ["cb1custrole", "cb1customer"],
+  },
+  cb1relpricing: {
+    title: "Relationship Pricing Customer",
+    simple: "A flag marking which customer role feeds Relationship (House-Holding) Pricing, so the group's overall business earns better rates.",
+    example: "A family's total deposits across accounts lift them a pricing tier — only roles flagged Relationship Pricing Customer are counted.",
+    why: "Banks reward the whole relationship, not just one product.",
+    memory: "Flag it in, or it doesn't count toward the household deal.",
+    temenos: "Set on AA.CUSTOMER.ROLE; the customer is included in pricing evaluation only if the Preferential/Relationship Pricing flag is on.",
+    related: ["cb1custrole", "cb1pricing"],
+  },
+
+  // ---- Section 5: Eligibility ----
+  cb1eligibility: {
+    title: "ELIGIBILITY Property Class",
+    simple: "An optional property class (Lending, Deposits, Accounts) that decides whether a customer may have a given product.",
+    example: "A student loan's eligibility says the customer must be under 25, a local resident and in full-time education.",
+    why: "Stops the wrong products being sold and filters the catalogue to what a customer can actually take.",
+    memory: "Eligibility = 'is this customer allowed this product?'",
+    temenos: "Product condition is Tracking Only, Date-specific; criteria are defined in the product designer and evaluated against customer attributes; returns error/override on failure.",
+    related: ["cb1elrules", "cb1variation", "cb1pricing"],
+  },
+  cb1elrules: {
+    title: "Eligibility Rules (ER.RULES / Rules Manager)",
+    simple: "Reusable rules — built in the Rules Manager and stored in ER.RULES / ER.RULES.VERSION — that express eligibility logic like 'CUSTOMER.AGE < 18'.",
+    example: "Rule CUSTOMER.AGE.LT.18 checks a customer's date of birth; it's versioned and referenced by the eligibility product condition.",
+    why: "Write a rule once, reuse it across many products and keep a version history.",
+    memory: "Rules Manager builds it; the product condition points at it.",
+    temenos: "Rules read context tables (e.g. CUSTOMER via ER.CONTEXT), have Content and Rule Variables, and are proofed like products; EB.RULE.GATEWAY links them.",
+    related: ["cb1eligibility", "cb1variation"],
+  },
+  cb1variation: {
+    title: "Product Variation",
+    simple: "A version of a product with different terms (often pricing), chosen automatically by matching the customer against each variation's eligibility.",
+    example: "A Premium Personal Loan variation gives a lower rate; customers who pass its eligibility see that version in their catalogue.",
+    why: "One product, many priced flavours, without building separate products.",
+    memory: "Variation = same product, better (or worse) deal for some customers.",
+    temenos: "Held in multi-value fields on the property vs AA.PRODUCT.VARIATION; evaluated in priority order at new-arrangement time; a default product covers failed eligibility; channels can be variation criteria.",
+    related: ["cb1eligibility", "cb1pricing", "cb1channelpricing"],
+  },
+  cb1pricing: {
+    title: "Pricing Options",
+    simple: "The ways a bank prices differently: Product Variation, Relationship (House-Holding) Pricing, Promotional Pricing and Channel Pricing.",
+    example: "A client gets a lower loan rate through Relationship Pricing for holding large deposits, plus a promo discount for opening online.",
+    why: "Pricing is a competitive lever pulled per customer, per channel and per relationship.",
+    memory: "Four levers: Variation, Relationship, Promotion, Channel.",
+    temenos: "Preferential pricing refers to using any of these methods; each is configured through eligibility/pricing product conditions.",
+    related: ["cb1variation", "cb1relpricing", "cb1channelpricing"],
+  },
+  cb1channelpricing: {
+    title: "Channel Pricing",
+    simple: "A product variation priced by the channel the customer uses — e.g. a better rate for internet-only products.",
+    example: "The same deposit pays 0.25% more when opened and operated through the mobile app.",
+    why: "Encourages customers onto cheaper self-service channels.",
+    memory: "Channel Pricing = discount for doing it yourself.",
+    temenos: "A form of Product Variation; CHANNEL is used as a variation eligibility criterion; differs from Relationship Pricing, which follows the customer relationship.",
+    related: ["cb1variation", "cb1pricing"],
+  },
+
+  // ---- Section 6: Officers, Activity Mapping & Consolidation ----
+  cb1officers: {
+    title: "OFFICERS Property Class",
+    simple: "An optional common property class holding the Primary Officer and any Other Officers responsible for an arrangement.",
+    example: "A corporate loan names a Primary Officer for servicing and a separate collections officer as an Other Officer.",
+    why: "Management information and workflow routing need to know who owns each arrangement.",
+    memory: "OFFICERS property = who's accountable for this deal.",
+    temenos: "Officer IDs must be valid in DEPT.ACCT.OFFICER; Other Officer roles must be valid in AA.CUSTOMER.ROLE virtual table; property can be Tracking; no accounting entry; default Primary Officer comes from the CUSTOMER record.",
+    related: ["cb1customer", "dao", "cb1actmap"],
+  },
+  cb1actmap: {
+    title: "Activity Mapping (ACTIVITY.MAP.PNG)",
+    simple: "A mandatory common property class that maps external transaction codes (from Payment Order, Teller, AC.CASH.POOL…) to the AA activities they should trigger.",
+    example: "A teller cash repayment posts with a transaction code; Activity Mapping turns that into the LENDING-DISBURSE-COMMITMENT / repayment activity on the loan.",
+    why: "Account-based transactions from the rest of Transact must drive the right arrangement activity.",
+    memory: "Activity Mapping = transaction code → AA activity.",
+    temenos: "One property per Product Group; values track at arrangement level only; uses FT.TXN.TYPE.CONDITION and similar (AC.CASH.POOL, TELLER.TRANSACTION); default activities can be set for unmapped codes.",
+    related: ["cb1consol", "cb1prodcond"],
+  },
+  cb1consol: {
+    title: "Consolidation & Reporting",
+    simple: "Common property classes that map AA balances and asset types to the fields other Transact reporting expects (Consol key, RE.STAT.REP.LINE, asset/balance types).",
+    example: "AA's CURACCOUNT balance is reported as the current principal; accrued interest maps to ACCLOANINT for the P&L category.",
+    why: "Regulatory and management reports read standard fields — AA must feed them.",
+    memory: "Consolidation = translate AA balances into report-speak.",
+    temenos: "CONSOLIDATE.COND accepts fields from AA.ACCOUNT.DETAILS; value date = REPORT.END.DATE; principal asset types double as balance types (CURACCOUNT, CURCOMMITMENT, LIVECMT/LIVECMTDL, ACCLOANINT).",
+    related: ["cb1actmap", "cb1deps"],
+  },
+
+  // ============ COURSE 7 · AA Common Building Blocks Implementation — Part 2 ============
+  // ---- Section 1: AA Accounting Concepts ----
+  cb2acctevents: {
+    title: "Accounting Events & Core Accounting",
+    simple: "AA activities raise accounting events; Core Accounting turns them into ledger entries (STMT.ENTRY, CATEG.ENTRY, RE.CONSOL.SPEC.ENTRY).",
+    example: "A disbursement activity fires an event that debits the loan account and credits the customer's account via allocation rules.",
+    why: "Every financial movement on an arrangement must hit the general ledger correctly.",
+    memory: "Activity → accounting event → ledger entries.",
+    temenos: "Allocation rules take an event and produce entries; posting detail defines each entry (type, references, narrative); AA removes the need for accounting logic in the business application.",
+    related: ["cb2balances", "cb2acctpc", "cb2acctrule"],
+  },
+  cb2balances: {
+    title: "Arrangement Balances",
+    simple: "Each property can hold several balances that change with the arrangement's life-cycle stage — Committed, Available, Due, Overdue buckets, Not Accrued.",
+    example: "The PRINCIPAL property shows Committed, Available and Outstanding; PENALTYINT shows Due, Overdue 30/60/90 days and Non Accrual.",
+    why: "Interest and charge calculations, aging and reporting all read specific balances.",
+    memory: "One property, many balances — one per state.",
+    temenos: "Balances update through Temenos Transact Accounting; used in financial reporting, interest/charge calculation and periodic restriction.",
+    related: ["cb2baltype", "cb2balprefix", "aa2accrued"],
+  },
+  cb2baltype: {
+    title: "Balance Type (AC.BALANCE.TYPE)",
+    simple: "A named financial component of a product — e.g. ACCPRINCIPALINT — with a Reporting Type of Contingent, Non-Contingent or Internal.",
+    example: "ACCPRINCIPALINT is the accrued-principal-interest balance type; a virtual balance type sums several real ones for calculation.",
+    why: "Balance types are the vocabulary the product and the ledger share.",
+    memory: "Balance Type = the name of a pot of money on the product.",
+    temenos: "Some are hard-coded in the property class; AC.BALANCE.TYPE lets you add more. Virtual types sum specified balances; can update dated historical balances; Suspend option halts P&L posting.",
+    related: ["cb2balances", "cb2balprefix"],
+  },
+  cb2balprefix: {
+    title: "Balance Prefix & Suffix",
+    simple: "A prefix on a balance type marks its life-cycle stage (CUR current, DUE due, ACC accrued, AGE aged); a suffix like SP marks suspended (non-accrual) balances.",
+    example: "CURPRINCIPALINT is the live principal-interest balance; PRINCIPALINTSP is the same amount once suspended.",
+    why: "The prefix/suffix lets one property expose current, due, accrued and suspended views of the same money.",
+    memory: "Prefix = which stage; suffix SP = suspended.",
+    temenos: "Prefixes controlled via BALANCE.PREFIX (CUR, ACC, DUE, AGE…); differ by product line (Lending / Deposits / Accounts).",
+    related: ["cb2baltype", "cb2balances", "aai1balances"],
+  },
+
+  // ---- Section 2: Accounting Product Condition ----
+  cb2acctpc: {
+    title: "ACCOUNTING Property Class",
+    simple: "A mandatory common property class that holds the soft accounting rules for a product — which action of which property posts what.",
+    example: "It says the ACCRUE action of PRINCIPALINT books to the interest-income category, using a named allocation rule.",
+    why: "Soft rules mean accounting behaviour is configured, not coded, and can differ per product.",
+    memory: "ACCOUNTING property = the product's posting rulebook.",
+    temenos: "Mandatory (Lending, Deposits, Accounts); ACCT.ACTION.CLASS names the action, ACCTRULE names the allocation rule, ACCTRULE Field links them; not viewable/editable at arrangement level; no accounting entry of its own.",
+    related: ["cb2acctrule", "cb2acctevents", "cb1actmap"],
+  },
+  cb2acctrule: {
+    title: "Allocation Rule (AC.ALLOCATION.RULE)",
+    simple: "Takes one accounting event and produces the ledger entries: target balance, contra balance, transaction codes and movement detail.",
+    example: "The disbursement allocation rule moves the amount from the commitment balance to the customer's account and passes the FT transaction code.",
+    why: "It's the reusable recipe that converts a business event into balanced double entry.",
+    memory: "Allocation rule = event in, balanced entries out.",
+    temenos: "Multiple target/contra targets from one event; AC.POSTING.DETAIL defines entry type, references and narratives; copy-and-modify a supplied rule for new interest/charge properties.",
+    related: ["cb2acctpc", "cb2acctevents", "cb2suspense"],
+  },
+  cb2ncfc: {
+    title: "Non-Customer-Facing Charges",
+    simple: "Fees and costs tied to a loan that must not be shown to the customer — booked and amortised between the bank's internal account and P&L.",
+    example: "Salary expense, attorney fees and origination costs are accrued against each loan under FASB rules and amortised to maturity.",
+    why: "Regulation requires these costs recognised over the loan's life, separately from customer charges.",
+    memory: "Non-customer-facing = the bank's own cost of the loan.",
+    temenos: "Bill Type Internal; ACCRUE/AMORT and ACCRUE.PERIOD fields set accrual vs schedule frequency; INTERNAL.BOOKING checked on the property; back-dated changes reverse and rebook the accruals.",
+    related: ["cb2acctpc", "aa3charges"],
+  },
+  cb2suspense: {
+    title: "AASUSPENSE",
+    simple: "When a loan or deposit arrangement is debited or credited, the original entry moves to a suspense account and the opposite entry is created there — then cleared during the real processing activity.",
+    example: "A repayment lands in AASUSPENSE, then the applied-payment activity moves it onto the loan and clears suspense.",
+    why: "Decouples the money arriving from the arrangement processing it — improves performance and reconciliation.",
+    memory: "AASUSPENSE = the holding bay between cash and arrangement.",
+    temenos: "Internal balance type AASUSPENSE used in both core and soft accounting; supports 'Process Dated Accounting' for Lending, Deposits and Accounts.",
+    related: ["cb2acctrule", "cb2acctevents"],
+  },
+  cb2txnentry: {
+    title: "TXN.ENTRY.MB Enquiry",
+    simple: "An enquiry that shows the ledger entries an external application raised, matched to the arrangement activity reference.",
+    example: "Entries posted by an external teller system don't store IDs in ECB for the contract, so TXN.ENTRY.MB is used to display them by activity reference.",
+    why: "You still need to trace external-application postings back to the arrangement.",
+    memory: "TXN.ENTRY.MB = 'show me what that external system posted here'.",
+    temenos: "Enhanced enquiry keyed on transaction reference input with arrangement activity reference.",
+    related: ["cb2acctevents", "cb1actmap"],
+  },
+
+  // ---- Section 3: Balance Maintenance ----
+  cb2balmaint: {
+    title: "BALANCE.MAINTENANCE Property Class",
+    simple: "An optional common property class used to capture bills and balances, and to adjust or write off balances — mainly for migrating loans/deposits into AA.",
+    example: "Taking over an overdraft from a legacy system: capture its historical balances, outstanding principal, overdue bills and current accruals.",
+    why: "Migration needs to load an in-flight arrangement's real position without re-running its whole history.",
+    memory: "Balance Maintenance = load / fix balances for takeovers.",
+    temenos: "Optional (Lending, Deposits, Accounts); attributes governed by TYPE (DATED, NON.TRACKING, CCY, MULTIPLE, ARRANGEMENT); the 'other side' of every movement is handled by allocation rules (usually suspense/wash).",
+    related: ["cb2capture", "cb2adjust", "cb2hisbalance"],
+  },
+  cb2capture: {
+    title: "Capture Bill / Balance / Historical Balance",
+    simple: "Activities that load a single bill, a set of balances, or capitalised historical interest bills onto a migrated arrangement.",
+    example: "Capture Bill posts a due amount with an effective date before the arrangement's Transact start date; it's then aged by the same activity.",
+    why: "A taken-over loan must show its outstanding bills and accruals from day one.",
+    memory: "Capture = put the legacy position onto the AA arrangement.",
+    temenos: "Capture Historical Balance is Accounts-product-line only; interest property mandatory for Capture Historical Bill; Capitalize option allowed in the payment method.",
+    related: ["cb2balmaint", "cb2adjust", "cb2hisbalance"],
+  },
+  cb2adjust: {
+    title: "Adjust & Write-Off Activities",
+    simple: "Adjust Bill, Adjust Balance, Adjust All and Write Off Bill/Balance let you increase, decrease or zero existing bills and balances in one transaction.",
+    example: "Adjust All corrects both bills and non-bill balances after a migration error; Write Off Bill sets an existing bill's amount to zero.",
+    why: "Post-migration corrections and genuine write-offs need controlled, auditable activities.",
+    memory: "Adjust = nudge up/down; Write Off = zero it.",
+    temenos: "Multiple bills per transaction; balances shown as at the adjustment activity's effective date; net movement can be zero; Adjust Balance for Upfront Profit uses LENDING-RESTRUCTURE-BALANCE-MAINTENANCE and recalculates profit.",
+    related: ["cb2balmaint", "cb2capture"],
+  },
+  cb2hisbalance: {
+    title: "Historical Balances (HIS-<ACCOUNT>)",
+    simple: "Memo balance types with the HIS prefix that hold a migrated account's past positions so daily closing balances, limits and interest can be recalculated.",
+    example: "HIS-ACCOUNT holds the historical current balance; HIS-LIMIT*CUR the historical available limit — used for back-value-dated changes after takeover.",
+    why: "Back-dated activity beyond the Transact takeover date needs the old balances to replay correctly.",
+    memory: "HIS- balances = the arrangement's past, kept for replay.",
+    temenos: "Types include HIS-ACCOUNT, HIS-LIMIT*UTL, HIS-LIMIT*CUR, HIS-LIMIT*TOT, HIS-LIMIT*OVD; interest movements from historical bills adjust running account and limit balances.",
+    related: ["cb2balmaint", "cb2capture"],
+  },
+
+  // ---- Section 4: Statement Narratives ----
+  cb2narrative: {
+    title: "Statement Narratives (AA.NARRATIVE)",
+    simple: "Configurable free-format, multi-language descriptions of arrangement activities that appear on customer statements and online enquiries.",
+    example: "A repayment shows as 'Loan repayment received - thank you' instead of a raw activity code.",
+    why: "Customers need statements they can read, in their language.",
+    memory: "Narrative = human-readable label for an activity on a statement.",
+    temenos: "Narrative is extracted from AC.POSTING.DETAIL, AA.PROPERTY and AA.ACTIVITY; STMT-AA record maps activity → narrative; mapping is triggered by the Event in the 'Value Source' field.",
+    related: ["cb2narrparam", "cb2narrformat", "cb2printstmt"],
+  },
+  cb2narrparam: {
+    title: "AA.STATEMENT.NARR.PARAM",
+    simple: "Links arrangement activities to narrative formats, keyed by system ID + activity ID (e.g. LENDING-NEW-ARRANGEMENT).",
+    example: "The parameter record for LENDING-NEW-ARRANGEMENT points at the format used when a loan is opened.",
+    why: "Each activity type needs its own narrative wording and layout.",
+    memory: "NARR.PARAM = which format for which activity.",
+    temenos: "Transaction-specific parameters take precedence over the application's main parameter; tabbed fields for narrative formats, organised by display-selection field operand value.",
+    related: ["cb2narrative", "cb2narrformat"],
+  },
+  cb2narrformat: {
+    title: "AA.STATEMENT.NARR.FORMAT",
+    simple: "Defines the actual narrative text and the conversion rules applied to each token (dates, amounts, function names, related customer).",
+    example: "A format string '{activity} of {amount} on {date}' with conversion types that format the amount and spell out the date.",
+    why: "Separating format from parameter lets one wording be reused across activities.",
+    memory: "NARR.FORMAT = the template string + how each field is rendered.",
+    temenos: "Linked to the Narrative Parameter via the Statement Format attribute; conversion types include VALUE, ATTRIBUTE, DATE.TIME, DENOM, EXTRACT, TXT, ACCT.NAME.CUSTOMER, etc.; categorised into Text for Display / Field / Balance Types tabs.",
+    related: ["cb2narrative", "cb2narrparam"],
+  },
+  cb2printstmt: {
+    title: "PRINT.STATEMENT",
+    simple: "The application that configures requests for printing or reprinting AA account statements, integrating the AA.NARRATIVE wording.",
+    example: "A monthly statement run for a loan account pulls its activity narratives and prints them via the Statement Type.",
+    why: "The readable narrative has to reach the printed/PDF statement, not just the online enquiry.",
+    memory: "PRINT.STATEMENT = the narrative on paper.",
+    temenos: "Can be invoked during COB or online; record ID must be linked as Statement Type; needs Statement ID, Acct ID, Processing Date, Mask Print, Show Reversal; components tab hides zero-value lines etc.",
+    related: ["cb2narrative", "cb2narrparam"],
+  },
+
+  // ---- Section 5: COB & Data Lifecycle ----
+  cb2cob: {
+    title: "COB Processing for AA",
+    simple: "During Close of Business, unauthorised debit/credit arrangements in account products can be skipped from delete-and-recreate to improve performance.",
+    example: "A batch of unauthorised repayment activities is left in place at COB instead of being torn down and rebuilt.",
+    why: "Rebuilding thousands of pending activities every night is expensive.",
+    memory: "COB skip = leave the unauthorised ones alone overnight.",
+    temenos: "Configurable by Product Line, Product Group, Product, Company, Activity Class or Activity; AA.DECISION.PARAMETER = 'Ignore Transaction Activities/Accounts' or Default Decision.",
+    related: ["cb2decision", "cb2dlm"],
+  },
+  cb2decision: {
+    title: "AA.DECISION.PARAMETER",
+    simple: "Controls what COB does with unauthorised activities: the Default Decision deletes and recreates them; 'Ignore' leaves them.",
+    example: "Set to Ignore for a high-volume product so overnight COB doesn't churn its pending activities.",
+    why: "One switch tunes the performance/consistency trade-off for COB.",
+    memory: "Decision parameter = delete-and-rebuild, or ignore.",
+    temenos: "When configured to use Default Decision, unauthorised activities are deleted and recreated during COB (the system's existing behaviour).",
+    related: ["cb2cob"],
+  },
+  cb2dlm: {
+    title: "Data Lifecycle Management (DLM)",
+    simple: "Moves aged data from the live database to a non-volatile (read-only) database before purging, keeping the live system small and fast.",
+    example: "Loan activity history older than the retention period is shifted to the OLTP database; queries can still reach it.",
+    why: "Years of arrangement, activity and history records would otherwise bloat the live system.",
+    memory: "DLM = retire old data to a read-only shelf, still readable.",
+    temenos: "Archivable: AA.ARRANGEMENT.ACTIVITY, AA.PROCESS.DETAILS, AA.ARR.<property>; time-based partitioning + configurable data transfers; framework still lets you read aged data.",
+    related: ["cb2archive", "cb2nolog"],
+  },
+  cb2archive: {
+    title: "Archiving (ARCHIVE application)",
+    simple: "The ARCHIVE / AA.ARRANGEMENT record holds a closed arrangement's archival definition — Purge Date and Retention Period — driving what gets deleted or moved to read-only.",
+    example: "A closed loan past its Purge Date is deleted; one past only its Retention Period is moved to the read-only database.",
+    why: "Closed arrangements should not sit in the live system forever.",
+    memory: "Purge Date = delete; Retention Period = move to read-only.",
+    temenos: "Purge/Retention set in ARCHIVE (or AA.PARAMETER/SYSTEM); Closed Date in AA.ARRANGEMENT; Archive Activities can set a per-activity threshold; also works for live arrangements (Retain/Act Retain Period); a background AUTO service manages the split.",
+    related: ["cb2dlm", "cb2nolog"],
+  },
+  cb2nolog: {
+    title: "NOLOG Activities & AAACN Prefix",
+    simple: "Activities flagged NOLOG aren't written to AA.ARRANGEMENT.ACTIVITY, cutting growth; their AA IDs get an AAACN prefix instead of AAACT.",
+    example: "A high-frequency alert-subscribe activity is set NOLOG so it doesn't bloat the activity table.",
+    why: "Not every activity needs a permanent audit record; skipping the log speeds things up.",
+    memory: "NOLOG = don't record it; AAACN = the 'not logged' ID.",
+    temenos: "Set NOLOG on the Activity Class TYPE; NOLOG and Restrict Log are mutually exclusive; if forced manually the AAACN prefix must be forced too; Restrict Log activities use AAACT-prefixed IDs and limited detail.",
+    related: ["cb2archive", "cb2dlm", "aai2reverse"],
+  },
+
+  // ============ COURSE 8 · AA Lending Product Building Implementation — Part 1 ============
+  // ---- Section 1: Term Amount ----
+  lpb1termamt: {
+    title: "TERM.AMOUNT Property Class",
+    simple: "A mandatory Lending property class that carries both the Commitment Amount (what's approved to lend) and the Term (how long to repay).",
+    example: "A personal loan's TERM.AMOUNT holds 150,000 USD over 12 months.",
+    why: "Every loan needs an approved amount and a repayment horizon before anything else is calculated.",
+    memory: "TERM.AMOUNT = how much, for how long.",
+    temenos: "Currency-specific; attributes governed by TYPE (DATED, CCY, MULTI.TRACKING, VARIATION); balance prefix from CUR/TOT/DIS/LTL.",
+    related: ["lpb1commit", "lpb1maturity", "aa2commit"],
+  },
+  lpb1commit: {
+    title: "Commitment Amount & Change Amount",
+    simple: "The Committed Amount is what's available to be lent; a Change Amount activity increases or decreases it during the arrangement's life.",
+    example: "A top-up raises the commitment from 150k to 200k; a partial cancellation lowers it.",
+    why: "Loan sizes change — extensions, restructures, cancellations — without a new arrangement.",
+    memory: "Commitment = the ceiling; Change Amount moves the ceiling.",
+    temenos: "Update Limits option decides whether the LIMIT record follows the commitment change; Commitment Drawdown / Utilisation control how disbursed vs undrawn amounts are tracked (UTLXXX balance).",
+    related: ["lpb1termamt", "lpb1revolving", "lpb1limit"],
+  },
+  lpb1maturity: {
+    title: "Maturity Date & Term of Contract",
+    simple: "Maturity is derived from Term (or entered directly); a Mat Date Convention decides whether it's adjusted when it lands on a non-working day.",
+    example: "A 12-month loan from 15 Jan matures 15 Jan next year; if that's a holiday and the convention is Yes, it shifts.",
+    why: "The maturity date anchors the schedule, accrual end and payoff.",
+    memory: "Term → Maturity; convention handles the holiday.",
+    temenos: "Mat Date Convention on the Account property class is followed; if maturity moves beyond TERM.TOL.DAYS the term is recalculated; a Call product has no fixed maturity.",
+    related: ["lpb1termamt", "lpb1payschedule"],
+  },
+  lpb1revolving: {
+    title: "Revolving Commitment",
+    simple: "Controls whether repayments restore the available commitment — None, Payment (any principal repayment restores) or Prepayment (only early repayment restores).",
+    example: "A revolving credit line set to Payment lets the customer redraw whatever principal they repay.",
+    why: "Revolving facilities behave completely differently from term loans on availability.",
+    memory: "Revolving = do repayments give you your headroom back?",
+    temenos: "Options None / Payment / Prepayment; 'Whether to update the LIMIT record with the commitment amount' governs limit interaction.",
+    related: ["lpb1commit", "aa3commitment"],
+  },
+  lpb1tranche: {
+    title: "Tranche Disbursement & Drawdown",
+    simple: "One commitment can be released in named tranches, each with its own start date and amount, disbursed on a schedule or manually.",
+    example: "A construction loan of 1M is drawn as 3 tranches tied to build milestones.",
+    why: "Project and development finance releases money in stages, not one lump.",
+    memory: "Tranche = a slice of the commitment with its own drawdown.",
+    temenos: "A Tranche Bill is created on each tranche's start date; unutilised tranche amounts can be reversed; Automatic Scheduled Disbursement transfers funds to a specified account, triggered by a 'disbursement' transaction code subject to available commitment and Activity Restrictions.",
+    related: ["lpb1commit", "aa3disburse"],
+  },
+
+  // ---- Section 2: Account ----
+  lpb1account: {
+    title: "ACCOUNT Property Class",
+    simple: "A mandatory property class that holds the principal balance of the arrangement and its account-level settings.",
+    example: "The ACCOUNT property is where the loan's CURACCOUNT balance lives and where the Account Category, base date and posting rules are set.",
+    why: "Every AA arrangement is account-based — opening it creates an account that holds the balances.",
+    memory: "ACCOUNT property = the arrangement's own account.",
+    temenos: "ACCOUNT.TYPE attributes are DATED and VARIATION; CUR/DUE/AGE/AVL/UNC/UND balance prefixes for Lending; allowed suffix *INP/*CO/*CLIST/*CLST.",
+    related: ["lpb1dormancy", "lpb1basedate", "lpb1posting"],
+  },
+  lpb1dormancy: {
+    title: "Dormancy",
+    simple: "The number of inactive months after which an arrangement account is treated as dormant.",
+    example: "An account with no customer activity for 12 months is flagged dormant, restricting further movements.",
+    why: "Dormant accounts carry fraud and regulatory risk and need special handling.",
+    memory: "Dormancy = 'no activity for N months → freeze it'.",
+    temenos: "Set on the ACCOUNT product condition (or the Dormancy property class); can be configured to update the dormancy status automatically.",
+    related: ["lpb1account", "lpb1basedate"],
+  },
+  lpb1basedate: {
+    title: "Base Date Key & Date Base Type",
+    simple: "The Base Date is the anchor for deriving event dates (charging, rollover, periodic interest); Base vs Previous decides whether cycling uses the un-adjusted base date or the last actual cycle date.",
+    example: "Monthly interest cycles from the 15th (base) even if a payment landed on the 14th because the 15th was a weekend.",
+    why: "Schedules must cycle predictably regardless of holidays and off-cycle payments.",
+    memory: "Base = the fixed anchor; Previous = follow the last real date.",
+    temenos: "BASE.DATE.KEY stores the base day; Base Date Type option determines the calculation start date; 'Start' works from the first Disbursement Date.",
+    related: ["lpb1account", "lpb1payfreq"],
+  },
+  lpb1posting: {
+    title: "Posting Restrictions",
+    simple: "Rules that block debits and/or credits on an arrangement account for a date range, with a reason code.",
+    example: "A disputed loan has a Posting Restriction blocking debits until the dispute is resolved.",
+    why: "Operations need to freeze movement on an account without closing it.",
+    memory: "Posting Restriction = a temporary lock with a reason.",
+    temenos: "Multiple restrictions with start/end dates; blocking codes via virtual tables BLOCK.REASON.CODES / UNBLOCK.REASON.CODES; <PRODUCTLINE>-START.RESTRICTION-ACCOUNT / END.RESTRICTION-ACCOUNT; pre-notice configurable.",
+    related: ["lpb1account", "lpb1dormancy"],
+  },
+
+  // ---- Section 3: Limit ----
+  lpb1limit: {
+    title: "LIMIT Property Class",
+    simple: "An optional Lending property class that links an arrangement to a limit defined in the LIMIT module.",
+    example: "A loan draws against a customer's approved 500,000 credit limit; the arrangement consumes part of it.",
+    why: "Banks approve credit at customer/group level; individual loans draw it down.",
+    memory: "LIMIT property = 'which approved limit does this loan use?'",
+    temenos: "Optional; Limit Product must be indicated in LIMIT.REFERENCE.FIELD; typically Arrangement Level and Non-Tracking; an override is generated when DISBURSE runs without a limit attached.",
+    related: ["lpb1limitref", "lpb1netting", "lpb1commit"],
+  },
+  lpb1limitref: {
+    title: "Limit Reference & Single Limit",
+    simple: "Limit Reference is the limit record ID in the arrangement; Single Limit = Yes locks that limit to this one arrangement, No lets other arrangements of the same customer share it.",
+    example: "A mortgage uses a Single Limit; a customer's revolving facilities share one limit with Single Limit = No.",
+    why: "Some facilities are ring-fenced; others pool against a shared limit.",
+    memory: "Single Limit = mine only; not single = shared by the customer.",
+    temenos: "Limit Reference must relate to the Primary Owner; the option for shared use is indicated with No.",
+    related: ["lpb1limit", "lpb1netting"],
+  },
+  lpb1netting: {
+    title: "Netting",
+    simple: "Lets an arrangement's credit balance offset another arrangement's overdraft when they share the same Limit.",
+    example: "A customer's positive current account nets against their overdraft limit usage, cutting interest.",
+    why: "Customers with cash and borrowing shouldn't pay gross interest on both.",
+    memory: "Netting = credit here cancels debit there, same limit.",
+    temenos: "Applicable only for shared limits; the credit balance is added to the overdraft limit for use in other arrangement accounts using the same Limit.",
+    related: ["lpb1limit", "lpb1limitref"],
+  },
+
+  // ---- Section 4: Interest ----
+  lpb1interest: {
+    title: "INTEREST Property Class",
+    simple: "An optional property class; a product can carry several INTEREST properties — principal interest, penalty interest — each with its own rate, conditions and balance.",
+    example: "PRINCIPALINT at 5% and PENALTYINT at 6% are two INTEREST properties on one loan.",
+    why: "Loans charge interest on different bases; each needs separate configuration and accounting.",
+    memory: "One INTEREST property per interest stream.",
+    temenos: "Attributes DATED, CCY, MULTI.TRACKING, FORWARD.DATED, VARIATION; balance prefixes ACC/DUE/AGE/RES/DEF/REC/INV; allowed suffix SP*CO*CUST for Lending.",
+    related: ["lpb1inttypes", "lpb1tiered", "aa3ratetypes"],
+  },
+  lpb1inttypes: {
+    title: "Interest Types (Fixed / Floating / Periodic)",
+    simple: "Fixed = a rate you type; Floating = read from BASIC.INTEREST (± spread); Periodic = read from PERIODIC.INTEREST for a defined period, refreshed on a cycle.",
+    example: "A tracker mortgage is Floating (base + 1.5%); a 2-year fix is Periodic with a reset date.",
+    why: "The rate mechanism drives how and when the customer's rate changes.",
+    memory: "Fixed = typed; Floating = live index; Periodic = index for a period.",
+    temenos: "Periodic Method interpolates (or NEXT/PREVIOUS/CLOSEST) when the term doesn't match a period; PERIODIC.RESET.DATE schedules the first reset; custom rate calculation is also possible.",
+    related: ["lpb1interest", "lpb1rfr", "aa3floating"],
+  },
+  lpb1rfr: {
+    title: "Risk-Free Rates (RFR)",
+    simple: "Compounded overnight rates (SOFR, SONIA…) replacing LIBOR, with conventions for look-back, observation shift, day count and spread treatment.",
+    example: "A loan uses compounded SONIA with a 5-day look-back and an inclusive credit spread.",
+    why: "The market moved off LIBOR; AA has to compound a daily rate correctly.",
+    memory: "RFR = compound yesterday's overnight rate, with a rulebook.",
+    temenos: "RFR Convention, Lookback (Narrow Definition / Observation Shift), RFR Look Back Days (1–10), Calculation Method (Simple/Compound/Amount), Period Day Count (Today/Full), Spread Treatment (Inclusive/Exclusive), RFR Rounding Rule, No. of Decimals (default 4), RFR Flooring on the Tier Negative Rate attribute.",
+    related: ["lpb1inttypes", "aa3rfr"],
+  },
+  lpb1tiered: {
+    title: "Tiered Interest Rates",
+    simple: "Different rates by balance band — Level (one tier's rate on the whole balance), Banded (each rate only on its slice), or Group.",
+    example: "0–10k at 2%, 10k–50k at 3%: Banded charges 2% on the first 10k and 3% on the rest; Level charges 3% on all of it.",
+    why: "Products reward or penalise size; the tier method changes the amount materially.",
+    memory: "Banded = per slice; Level = whole balance at the reached tier.",
+    temenos: "Tier Amount vs Tier Percent (one or the other, not both); negative rates allowed with a Floor; Block margin adds a margin when the reference rate is negative; min/max rate per tier.",
+    related: ["lpb1interest", "aa3tiers"],
+  },
+  lpb1rateadj: {
+    title: "Rate Adjustment & Adjustment of Interest Rates",
+    simple: "RATE.ADJUSTMENT changes a periodic rate at arrangement level after publish; ADJUST.TYPE/OPERAND/MARGIN tweak the picked rate by a margin or override it entirely.",
+    example: "A retention deal knocks 0.25% off the customer's periodic rate without changing the product.",
+    why: "Front office needs to negotiate a rate for one customer without a product change.",
+    memory: "Rate Adjustment = bend this arrangement's rate.",
+    temenos: "RATE.ADJUSTMENT set at arrangement level, not the product condition; ADJUST.OPERAND {ADD, SUBTRACT, MULTIPLY}; ADJUST.OVERRIDE.RATE is the final rate if override/ignore; AA.ADJUST.REASON virtual table; ADJUST.EXPIRY.DATE reverts to the original rate.",
+    related: ["lpb1inttypes", "lpb1linked"],
+  },
+  lpb1linked: {
+    title: "Linked Rates",
+    simple: "One arrangement's rate is derived from another arrangement's Interest property — used when a deposit is collateral for a loan/overdraft.",
+    example: "An overdraft priced at 'the pledged deposit's rate + 2%' via a Linked Rate to the deposit arrangement.",
+    why: "Secured lending is often priced directly off the security's own rate.",
+    memory: "Linked Rate = 'my rate = that arrangement's rate + margin'.",
+    temenos: "Linked Rate = Yes on a tier; specify Linked Arrangement and Linked Property; with a Banded linked condition the returned rate is a pre-rated/blended rate; an error is raised for more than one collateral right attached.",
+    related: ["lpb1rateadj", "lpb1interest"],
+  },
+
+  // ---- Section 5: Tax ----
+  lpb1tax: {
+    title: "TAX Property Class",
+    simple: "An optional property class that calculates tax (e.g. withholding) on the interest and charges of a named property.",
+    example: "A WHT property taxes deposit interest at 15% and posts it to the tax authority.",
+    why: "Many jurisdictions require tax withheld at source on interest.",
+    memory: "TAX property = withhold tax on this property's interest/charges.",
+    temenos: "Multiple TAX properties allowed; Currency and Dated; DUE and AGE balance prefixes (Lending); Tax Code (TAX.CODE or TAX.CONDITION), Property Tax Code (PROP.TAX.CODE or PROP.TAX.COND); tax can optionally be included in the payment schedule.",
+    related: ["lpb1taxsplit", "lpb1interest"],
+  },
+  lpb1taxsplit: {
+    title: "Tax Splits & Proportional Tax",
+    simple: "Tax can be split between related customers (by percentage), and calculated proportionally to the interest actually earned in a period.",
+    example: "Joint account interest tax is split 50/50 via CUSTOMER.RELATIONSHIP; a mid-period rate change makes tax proportional.",
+    why: "Regulation can require tax apportioned per owner and per earning period.",
+    memory: "Split = per owner; Proportional = per amount earned.",
+    temenos: "Split via AA.CUSTOMER.ROLE / CUSTOMER.RELATIONSHIP; ST.CUST.RELATIONSHIP.DATES holds the split dates; TAX.CODE.PARAMETER switches on Proportional Tax Calculation per tax code; ST.TAX.CALC.DETAILS holds the breakup.",
+    related: ["lpb1tax", "cb1relpricing"],
+  },
+
+  // ---- Section 6: Charges ----
+  lpb1activitycharge: {
+    title: "ACTIVITY.CHARGES Property Class",
+    simple: "An optional property class that levies a charge when a specific AA activity is triggered.",
+    example: "An early-repayment activity fires an ACTIVITY.CHARGES property that bills a break fee.",
+    why: "Some fees are event-driven — they should only apply when the customer does a particular thing.",
+    memory: "ACTIVITY.CHARGES = fee when activity X happens.",
+    temenos: "DATED, FORWARD.DATED and TRACKING type; the activity attracting the charge (Activity ID) must be a valid AA.ACTIVITY record; APP.METHOD = Due/Cap/Defer/Pay; can defer by days after occurrence.",
+    related: ["lpb1charge", "lpb1triggercharge"],
+  },
+  lpb1charge: {
+    title: "CHARGE Property Class",
+    simple: "The general charging property class — Fixed, Percentage or Unit charges, on specified balances, with tiers and currency handling.",
+    example: "An arrangement fee of 1% of the commitment, minimum 100 USD.",
+    why: "Most loan and account fees are configured here rather than coded.",
+    memory: "CHARGE = the product's fee engine.",
+    temenos: "Optional (Lending); multiple CHARGE properties; ACC/DUE/AGE/PAY/DEF/INV balance prefixes, suffix SP; Calculation Type Flat/Percentage/Unit; Charge Currency defaults from the CHARGE property; tiers Level/Banded/Groups; Charge Tier exclusive/inclusive threshold and Calculation Threshold.",
+    related: ["lpb1chargeoverride", "lpb1periodiccharge", "aa3charges"],
+  },
+  lpb1chargeoverride: {
+    title: "CHARGE.OVERRIDE Property Class",
+    simple: "Lets a user waive or modify charges when an activity is triggered or a rule is broken.",
+    example: "A manager waives the late fee on a good customer's missed payment via CHARGE.OVERRIDE.",
+    why: "Front-line staff need controlled discretion over fees.",
+    memory: "CHARGE.OVERRIDE = the 'waive this fee' switch.",
+    temenos: "Optional; DATED and non-tracking; appears in an arrangement after an Activity Charge is triggered and validated; the waive reason is stored; user can modify or waive all where more than one charge for the same activity is attached.",
+    related: ["lpb1charge", "lpb1activitycharge"],
+  },
+  lpb1periodiccharge: {
+    title: "PERIODIC.CHARGES Property Class",
+    simple: "Charges that fall due at regular intervals — a monthly service fee, a quarterly facility fee.",
+    example: "A 25 USD monthly account maintenance charge billed every cycle.",
+    why: "Recurring fees need their own scheduled mechanism, separate from event charges.",
+    memory: "PERIODIC.CHARGES = the standing-order fee.",
+    temenos: "Optional (Lending); Dated; Currency optional; DUE/PAY/AGE/DEF balance prefixes, suffix SP/CO/CUST; 'Include All Deferred Charges' decides whether deferred charges are made due; both attributes settable at product or arrangement level.",
+    related: ["lpb1charge", "lpb1triggercharge"],
+  },
+  lpb1triggercharge: {
+    title: "Triggering & Deferring Charges",
+    simple: "Charges trigger event-based (an activity runs), rule-based (a rule is broken) or schedule-based (a schedule date is reached), and can be deferred, capitalised or paid.",
+    example: "An overdraft fee is rule-based (limit exceeded); a documentation fee is event-based (new arrangement); a facility fee is schedule-based.",
+    why: "Knowing the trigger type tells you when and why a fee appears.",
+    memory: "Three triggers: event, rule, schedule.",
+    temenos: "APP.METHOD (Due/Cap/Defer/Pay) sets the application method; Calculation Types Fixed/Percentage/Unit with Source.Type (TXN.AMOUNT/COUNT) and Source.Balance; charges can be deferred by days after occurrence.",
+    related: ["lpb1charge", "lpb1activitycharge", "lpb1periodiccharge"],
+  },
+
+  // ---- Section 7: Payment Schedule ----
+  lpb1payschedule: {
+    title: "PAYMENT.SCHEDULE Property Class",
+    simple: "A mandatory Lending property class that defines the rules and defaults for the repayment schedule of a loan.",
+    example: "It says 'monthly, constant instalments, principal + interest, first payment one month after disbursement'.",
+    why: "The schedule is the heart of a loan — when and how much the customer pays.",
+    memory: "PAYMENT.SCHEDULE = the repayment plan's rulebook.",
+    temenos: "Mandatory; Dated, Forward-dated and Currency-specific; values can be viewed and edited; the schedule enquiry is generated at runtime (Nofile).",
+    related: ["lpb1paytypes", "lpb1payfreq", "aa2repaystruct"],
+  },
+  lpb1paytypes: {
+    title: "Payment Types (AA.PAYMENT.TYPE)",
+    simple: "Named repayment behaviours: ACTUAL (repay calculated property classes), CONSTANT (level instalment), LINEAR (level principal), PERCENTAGE (a % of the balance), DOWNPAYMENT, plus one-off/special types.",
+    example: "A standard amortising loan uses CONSTANT; a bullet loan uses ACTUAL with a final principal payment.",
+    why: "The payment type shapes the whole repayment curve.",
+    memory: "CONSTANT = level total; LINEAR = level principal; ACTUAL = pay what's calculated.",
+    temenos: "Defined in AA.PAYMENT.TYPE (Model Bank); Rule of 78 payment type allocates pre-calculated interest; can be pre-constructed via AA.PAYMENT.TYPE and defaulted onto the schedule conditions at arrangement creation.",
+    related: ["lpb1payschedule", "aa2repaytypes"],
+  },
+  lpb1payfreq: {
+    title: "Payment Frequency & Generating Bills",
+    simple: "How often payments fall due, and how many working days before the due date the bill is produced.",
+    example: "Monthly frequency, bill generated 5 working days in advance so the customer sees it coming.",
+    why: "Billing has to run ahead of the due date for notices and direct debits.",
+    memory: "Frequency = how often; In Advance = how early the bill.",
+    temenos: "Relative dates for start/end via events (START, MATURITY, RENEWAL, DISBURSEMENT) with R,XXXX offsets; Defer.By defers a payment, keeping bill status DEFER; system can run ISSUEBILL and MAKEDUE separately or together.",
+    related: ["lpb1payschedule", "lpb1basedate"],
+  },
+  lpb1recalc: {
+    title: "Recalculating the Payment Schedule",
+    simple: "Certain activities (change amount/term/rate) recalculate the schedule; recalculation type can be Payment, Term, Residual, Nothing or Progressive.",
+    example: "A rate rise with recalculation type Payment raises the instalment; with type Term it extends the loan instead.",
+    why: "When loan terms change, something has to give — the payment, the term, or a balloon.",
+    memory: "Recalc type = which lever moves when terms change.",
+    temenos: "Can be scheduled or triggered by an activity; 'Maturity then Payment' recalculates term first, then payment if the recalculated term exceeds the max; runs at predefined frequency (weekly/monthly/yearly).",
+    related: ["lpb1payschedule", "lpb1maturity"],
+  },
+  lpb1holidays: {
+    title: "Payment Holidays (Moratoriums)",
+    simple: "Rules letting a customer skip or reduce payments for a period, within caps set at product and arrangement level.",
+    example: "A borrower takes a 3-month payment holiday; accrued interest is capitalised and the schedule recalculated.",
+    why: "Forbearance and promotional 'no payments for 6 months' offers need controlled rules.",
+    memory: "Payment holiday = permission to skip, within limits.",
+    temenos: "Activity LENDING-UPDATE-PAYMENT.HOLIDAY; Payment Date, Number of Installments, Payment Type, Repay Type (collected immediately after / deferred); Repayment Holiday Limit caps the holiday; excess payment updates the Holiday Limit Available.",
+    related: ["lpb1payschedule", "lpb1recalc"],
+  },
+
+  // ---- Section 8: Settlement ----
+  lpb1settlement: {
+    title: "SETTLEMENT Property Class",
+    simple: "An optional property class that defines how money is received (Pay In) and paid out (Pay Out) for an arrangement, via mandates in the Direct Debit module.",
+    example: "Repayments are collected by direct debit from the customer's current account; disbursement pays out to their nominated account.",
+    why: "A loan is nothing without the plumbing that moves money in and out.",
+    memory: "SETTLEMENT = the arrangement's payment instructions.",
+    temenos: "Optional; date-specific; mandate defined in Direct Debit (DD); Receive/Payout are multi-value by Payment Type and related activity; default via DEFAULT.SETTLEMENT.ACCOUNT; PAYIN.SETTLEMENT / PAYIN.ACTIVITY / PAYOUT.ACTIVITY fields; default activity from Activity Mapping (R17).",
+    related: ["lpb1receiving", "lpb1directdebit", "lpb1offset"],
+  },
+  lpb1receiving: {
+    title: "Receiving Funds",
+    simple: "How incoming money is matched to bills: Full (only settle if the whole bill is covered), Partial (settle to the extent of funds), or None.",
+    example: "A partial payment on a 1,000 bill: with Partial, 600 settles 600 of it; with Full, nothing settles until 1,000 arrives.",
+    why: "Underpayments need a clear, configurable rule.",
+    memory: "Full = all or nothing; Partial = whatever's there.",
+    temenos: "The system combines due bill amounts into a single settlement when the Account Settlement field is Combined; Combine Bills field on the Account property; automatic settlement account is a Transact Account or single DD mandate.",
+    related: ["lpb1settlement", "lpb1directdebit"],
+  },
+  lpb1directdebit: {
+    title: "Direct Debits, Transaction Recycler & Cycler",
+    simple: "Direct Debit collects repayments; the Transaction Recycler retries movements that couldn't complete; the Transaction Cycler retries per a recycling condition and frequency.",
+    example: "A failed direct debit is picked up by the Recycler and retried; after N attempts it's handed to Made-Due processing.",
+    why: "Payments fail — insufficient funds, timing — and the system must retry sensibly.",
+    memory: "Recycler/Cycler = keep trying the failed collection.",
+    temenos: "DD Transaction Code mapped via ACTIVITY:MAPPING and specified in APPLY.PAYMENT; RC.CAPTURE condition and frequency; bills prioritised (oldest first or as configured); AA Bills Made-Due at COB can skip AA processing and hand to RC if configured.",
+    related: ["lpb1settlement", "lpb1receiving"],
+  },
+  lpb1offset: {
+    title: "Offsetting Bills (Settlement Part 2)",
+    simple: "Nets a Pay bill against a Due bill on the same or a linked property so the customer only moves the net amount.",
+    example: "A cashback Pay bill of 50 offsets a fee Due bill of 200; the customer is billed 150.",
+    why: "Raising and collecting gross bills that partly cancel wastes movements and confuses statements.",
+    memory: "Offset = cancel Pay against Due, move the net.",
+    temenos: "Offset Property Class/Property indicates which balance to offset; Offset Required Yes/No; Offset Pay Activity / Offset Payout Activity name the activities; from an accounting view the net is settled — no separate P&L impact.",
+    related: ["lpb1settlement", "lpb1receiving"],
+  },
+
+  // ============ COURSE 9 · AA Lending Product Building Implementation — Part 2 ============
+  // ---- Section 1: Payment Rules ----
+  lpb2payrules: {
+    title: "PAYMENT.RULES Property Class",
+    simple: "A mandatory Lending property class that decides how a single incoming payment is allocated across multiple bills and multiple properties.",
+    example: "A 2,000 payment is spread: oldest bill first, and within a bill principal before interest before the maintenance fee.",
+    why: "When one payment must clear several debts, the order and priority matter for interest and aging.",
+    memory: "PAYMENT.RULES = which bill, which property, gets paid first.",
+    temenos: "Mandatory; DATED, MULTIPLE, TRACKING, MEMO; Application order (Age-wise / Oldest first / Latest first / not CURRENT payment rule type); Repayment Order sets priority by property; Tax settlement method PRO.RATE or SEPARATE.",
+    related: ["lpb2payruletype", "lpb2remainder", "lpb1payschedule"],
+  },
+  lpb2payruletype: {
+    title: "AA.PAYMENT.RULE.TYPE",
+    simple: "Defines a named payment rule — which bills it applies to (Current / Advance), the property application type, and the payment method (Full or Partial).",
+    example: "An 'advance' rule type collects bills before their due date; a 'current' type pays what's due now.",
+    why: "Different collection scenarios (direct debit, ad-hoc overpayment, make-due) need different rules.",
+    memory: "RULE.TYPE = a recipe for one payment scenario.",
+    temenos: "Make Due / Advance Settle Date fields; Property Application Type balances vs current/reached property; Payment Method Full/Partial (Partial can settle bills in advance and update AA.ACCOUNT.DETAILS).",
+    related: ["lpb2payrules", "lpb2makedue"],
+  },
+  lpb2remainder: {
+    title: "Remainder Activity",
+    simple: "Says what to do with money left over after all bills and ad-hoc payments are satisfied.",
+    example: "After clearing every bill, 150 is left; the remainder activity credits it to the ADVACCOUNT (advance) balance.",
+    why: "Overpayments need a defined home, not to be rejected or lost.",
+    memory: "Remainder = 'where does the leftover go?'",
+    temenos: "Triggers the Payment Rules property; must be defined in the product; subject to Transaction rules; can be applied to a bill even before the due date has been reached, based on an allocation rule that reads the arrangement's financial status (Performing / Suspended / Both / Restructured).",
+    related: ["lpb2payrules", "lpb2payruletype"],
+  },
+  lpb2makedue: {
+    title: "Make Bill Due",
+    simple: "Forces bills to be treated as due — and settled — even when they aren't yet, so an early payment can clear them.",
+    example: "MAKE.BILL.DUE = Yes lets a lump-sum payment settle the next two bills before they fall due.",
+    why: "Customers who pay ahead expect their future instalments cleared.",
+    memory: "Make Due = 'pull the next bills forward and pay them'.",
+    temenos: "When set to Yes, advance bills are generated even if partially settled; Advance Payment Restriction sets how many bills ahead (Null = create and settle all until the payment amount is used; a number = that many).",
+    related: ["lpb2payruletype", "lpb2payrules"],
+  },
+
+  // ---- Section 2: Payout & Overdue ----
+  lpb2payout: {
+    title: "PAYOUT.RULES Property Class",
+    simple: "An optional property class defining the method and order in which money is paid out to customers from various arrangement balances.",
+    example: "A rebate is paid from the CURACCOUNT balance; a scheduled disbursement from undrawn commitment — the payout rule sets the order.",
+    why: "Just as payments in need rules, payments out need a defined source and sequence.",
+    memory: "PAYOUT.RULES = which balance the money leaves from, in what order.",
+    temenos: "Optional (Lending); Dated, Multiple, Tracking; payment application types CURRENT.PAY, PAY, DEPOSIT.PAY; LENDING.RULE.PAYOUT is used to pay out balances; property sequence must be a valid property of Interest, Charge or Principal amount.",
+    related: ["lpb2payrules", "lpb1settlement"],
+  },
+  lpb2overdue: {
+    title: "OVERDUE Property Class",
+    simple: "An optional property class that governs ageing statuses, chaser notices, suspensions and balance movements for delinquent loans.",
+    example: "An unpaid loan moves Grace → Delinquent → Non-Accrual, with notices and income suspension defined here.",
+    why: "Every bank needs a controlled, configurable delinquency process.",
+    memory: "OVERDUE = the delinquency rulebook.",
+    temenos: "Optional (Lending); DATED, TRACKING, MEMO; overdue statuses defined in Virtual table AA.OVERDUE.STATUS via EB.LOOKUP; Bill Type overdue rule definition; Arrangement Bill Type drives the overall arrangement status.",
+    related: ["lpb2ageing", "lpb2chaser", "aa3overdue"],
+  },
+  lpb2ageing: {
+    title: "Ageing Status & Basis",
+    simple: "A status (GRC/DEL/NAB…) that denotes how overdue an arrangement is; ageing can be by Days, by Bills, or a combination.",
+    example: "Ageing by Days: 1 day overdue = Grace, 30 = Delinquent, 90 = Non-Accrual, moving all bills to the NAB status.",
+    why: "The status drives accounting (income suspension), notices and reporting.",
+    memory: "Ageing = the label that says how bad the arrears are.",
+    temenos: "Ageing by Days (calendar days/months or a combination + a minimum count); Ageing by Bills (suffixed 'B', e.g. 1B, 2B); value '0' can't be set to more than one overdue status; Suspend Arrangement stops P&L accrual (AGE.ALL.BILLS = YES) to a special CRF category.",
+    related: ["lpb2overdue", "lpb2suspend"],
+  },
+  lpb2chaser: {
+    title: "Chaser Notice",
+    simple: "A dunning notice generated a set number of days after an ageing status is reached, then repeated at a frequency.",
+    example: "3 days into Delinquent a first notice goes out; another every 7 days thereafter.",
+    why: "Automated, timed reminders are the front line of collections.",
+    memory: "Chaser = the automatic 'you're behind' letter.",
+    temenos: "Notice can be generated a specified number of days post an ageing status; frequency set for recurrence; Age all Bills option ages bills less than a status to a specified status.",
+    related: ["lpb2overdue", "lpb2ageing"],
+  },
+  lpb2suspend: {
+    title: "Suspend Arrangement & Delinquent Settlement",
+    simple: "At a chosen status the arrangement is suspended (no further P&L accrual, entries to a special CRF category); Status Mvmt controls how repayments then move bills back.",
+    example: "In NAB, all bills move to that status; as the customer repays, the oldest bill's paid portion is reassigned back to Current.",
+    why: "Non-accrual accounting is a regulatory requirement for bad loans.",
+    memory: "Suspend = freeze the income; settlement un-freezes bill by bill.",
+    temenos: "AGE.ALL.BILLS field = YES to suspend; recalculation can happen during delinquent settlement; basis for ageing = Delinquent / Financial balance; deemed settled only when actual balances within a bill are settled.",
+    related: ["lpb2ageing", "lpb2overdue"],
+  },
+
+  // ---- Section 3: Restructure Rules ----
+  lpb2restructure: {
+    title: "RESTRUCTURE.RULES Property Class",
+    simple: "An optional property class defining stage-specific rules for suppressing/resuming interest and charges while a loan is being restructured.",
+    example: "During restructuring, penalty interest is suppressed from the original suppress date; on approval it resumes.",
+    why: "Debt restructuring under financial hardship needs the loan's normal charging paused in a controlled way.",
+    memory: "RESTRUCTURE.RULES = pause and resume charges during a workout.",
+    temenos: "Optional (Lending); Dated, Tracking; balance prefix Null; 3-stage process (In-progress / Reject / Approve) with matching functions; users create restructured statuses ('Inprog', 'Reject', 'Approved') via AA.RESTRUCTURE.STATUS.",
+    related: ["lpb2technicalloan", "lpb2rulestatus"],
+  },
+  lpb2technicalloan: {
+    title: "Technical Loan",
+    simple: "A parallel loan created during restructuring that carries the amended terms; repayments hit it and are redirected to the original loan's payment rules.",
+    example: "A hardship restructure opens a Technical Loan at a lower rate; the customer pays that, and the money flows to the original contract.",
+    why: "The original contract must stay intact for audit while the customer pays revised terms.",
+    memory: "Technical Loan = the 'new deal' shell over the real loan.",
+    temenos: "Both the Original loan and the Technical Loan currencies must be the same; a repayment on the technical loan is parked in the suspense account (UNC) then applied to the underlying original loan via its payment rules.",
+    related: ["lpb2restructure", "lpb2payrules"],
+  },
+  lpb2rulestatus: {
+    title: "Rule Status Type & Effective Date",
+    simple: "Indicates the type of restriction a restructure rule applies (against interest/charges) and when the suppress or resume action takes effect.",
+    example: "A rule suppresses PENALINTEREST with effect from 'Activity Date'; the resume rule uses 'Suppress Date' so it back-dates.",
+    why: "Restructuring outcomes depend precisely on which charges pause and from when.",
+    memory: "Rule Status Type = what's restricted; Effective Date = from when.",
+    temenos: "Rule Status Type indicates the type of restriction; Rule Action = SUPPRESS / RESUME; for a resume the Effective Date can be 'Activity Date' or 'Suppress Date'.",
+    related: ["lpb2restructure", "lpb2technicalloan"],
+  },
+
+  // ---- Section 4: Charge Off ----
+  lpb2chargeoff: {
+    title: "CHARGEOFF Property Class",
+    simple: "An optional property class that writes off a loan while keeping separate bank, customer and charge-off balance types for the same amounts.",
+    example: "A defaulted loan is charged off: the bank recognises the loss, but the customer still owes it — tracked in customer balances.",
+    why: "Accounting writes the loss off; the debt legally still exists and must be tracked.",
+    memory: "Charge-off = loss recognised, debt still remembered.",
+    temenos: "Optional (Lending); DATED, TRACKING; handles Charge-Off of Arrangement; when charged off, customer balances stay Regular; charge-off details stored in AA.ACCOUNT.DETAILS; AA.BILL.DETAILS holds customer due & bank information; overdue processing is triggered per the regular process.",
+    related: ["lpb2coallocation", "lpb2overdue"],
+  },
+  lpb2coallocation: {
+    title: "Charge-Off Allocation",
+    simple: "How balances move on a charge-off activity: allocation can follow the loan status (Regular/NPA), and target CUR<ACCOUNT> then bills (new to old) — NEWEST.FIRST — or OLDEST.FIRST.",
+    example: "A partial recovery on a charged-off loan is applied NEWEST.FIRST to the current account balance, then to bills latest-to-oldest.",
+    why: "Recoveries and further write-downs need a defined order across bank and customer balances.",
+    memory: "Charge-off allocation = which balance the movement hits, in what order.",
+    temenos: "Allocation based on status Property and Balance Type; NEWEST.FIRST allocates to DUE<ACCOUNT> ChargeOff balances, bills newest to oldest; if the recovery amount is negative, Decrease Charge-Off is triggered; each Account and Interest property can specify billed vs live vs charge-off balances.",
+    related: ["lpb2chargeoff", "lpb2payrules"],
+  },
+
+  // ---- Section 5: Constraint ----
+  lpb2constraint: {
+    title: "CONSTRAINT Property Class",
+    simple: "An optional property class that restricts how far back-dated activities may be performed — by a specific date, period, financial year, interest period, renewal or statement period.",
+    example: "A constraint blocks any back-value activity before the start of the current financial year.",
+    why: "Late back-dated changes reopen closed accounting periods and must be controlled.",
+    memory: "CONSTRAINT = 'you can't back-date past this line'.",
+    temenos: "Optional (Lending, Deposits, Accounts); Tracking, Dated; Constraint Type Date / Financial Year / Interest Period / Period / Renewal / Statement Period; RESULT = Error or Override with ERROR.MESSAGE / OVERRIDE.MESSAGE; multiple constraints resolve with 'Override' taking precedence; Exclude Activity field 'YES' in AA.ACTIVITY excludes an activity from constraint evaluation.",
+    related: ["lpb2periodicclass", "aai2reverse"],
+  },
+
+  // ---- Section 6: Periodic Attributes ----
+  lpb2periodicclass: {
+    title: "AA.PERIODIC.ATTRIBUTE.CLASS",
+    simple: "A Temenos-released (or user-defined) block that defines the Action, Comparison Type, Data Type and Source for a periodic rule — logic that changes product behaviour over time.",
+    example: "A periodic attribute class for 'interest rate ceiling' evaluates monthly and compares the current rate against a cap.",
+    why: "Some product behaviour must be re-checked on a cycle, not just at arrangement creation.",
+    memory: "Periodic Attribute Class = the mould for a time-based rule.",
+    temenos: "Released by Temenos; Action (AA.ACTIVITY.RESTRICTION, CHANGE, INTEREST/PAYMENT SCHEDULE, PAY.OFF, PRICING, RULES and ERRORMSGACT); Comparison Types via EB.COMPARISON.THR table (MINIMUM, MAXIMUM, RANGE); Data Types AMT/PERCID/N/R/N.DAO; Source Routine a valid EB.API entry.",
+    related: ["lpb2periodicattr", "lpb2periodicrules"],
+  },
+  lpb2periodicattr: {
+    title: "AA.PERIODIC.ATTRIBUTE",
+    simple: "A named instance of a periodic attribute class, referenced in a product condition, that fixes the rule the arrangement follows over time.",
+    example: "PERIODIC.ATTRIBUTE 'RATE.DECREASE' is used in the INTEREST product condition to restrict rate cuts during year 1.",
+    why: "The class is the logic; the attribute is the specific rule this product uses.",
+    memory: "Periodic Attribute = the class, filled in for one product.",
+    temenos: "Used in Product Condition; a rule that needs to be applied on a specific period or life-time of Arrangement is controlled by PERIODIC.TYPE (INITIAL, REPEATING, ROLLING, ASSESSMENT.PERIOD.CURRENT); PERIOD field controls the exact period for which the Rule is defined (01D, 1M, 7Y…).",
+    related: ["lpb2periodicclass", "lpb2periodicrules"],
+  },
+  lpb2periodicrules: {
+    title: "Periodic Rules Structure",
+    simple: "A rule tying a Property Class + Comparison Type + Routine to a time element, with a comparison value, break result and break charges.",
+    example: "'Interest rate increased more than 1% in any 1-year period' → break result 'error', break charge 10 USD.",
+    why: "Products need guardrails that trigger only when a change over a period crosses a threshold.",
+    memory: "Periodic Rule = threshold + period → consequence.",
+    temenos: "Interest & Charges: Maximum/Minimum Rate, Rate Decrease/Increase, Maximum/Minimum Charge rules; Transaction Amount & Count: Maximum/Minimum/Multiple, Totals per period; Balance: Maximum/Minimum Balance, Balance Increase, Minimum Initial Balance.",
+    related: ["lpb2periodicattr", "lpb2breakcharges"],
+  },
+  lpb2breakcharges: {
+    title: "Break Result & Break Charges",
+    simple: "When a periodic rule is broken, the Break Result (error / override) decides whether the action is blocked, and a Break Charge can be levied.",
+    example: "Breaking the early-repayment periodic rule overrides with a message and applies a 1% break fee.",
+    why: "Some limits are hard stops; others are 'allowed, but it'll cost you'.",
+    memory: "Break = error or override, plus maybe a fee.",
+    temenos: "Break Result and Break Charges defined per rule; charges link to a Charge Property; can be fixed or calculated on a base amount; defined in specific Product Conditions or based on failure of Periodic Attributes.",
+    related: ["lpb2periodicrules", "lpb1charge"],
+  },
+
+  // ---- Section 7: Activity Restrictions ----
+  lpb2actrestrict: {
+    title: "ACTIVITY.RESTRICTION Property Class",
+    simple: "An optional property class that limits, regulates or conditionally allows arrangement activities based on balance, transaction amount or count.",
+    example: "Block change-of-product entirely; or allow more than one repayment per year only after an override.",
+    why: "Products need rules about what customers and staff may and may not do to an arrangement.",
+    memory: "ACTIVITY.RESTRICTION = what's allowed, blocked, or allowed-with-override.",
+    temenos: "Optional; DATED, CCY, TRACKING, MULTIPLE, FORWARD.DATED, VARIATION; Complete restriction (Not to allow…), Partial/conditional (allow > override), Override message mandatory; Product Condition per currency; Periodic Rules enable time-element rules.",
+    related: ["lpb2restricttypes", "lpb2qualifier"],
+  },
+  lpb2restricttypes: {
+    title: "Restriction Types (Balance / Amount / Count · Rule / Activity / Property based)",
+    simple: "Restrictions key off Balance Rules, Transaction Amount or Transaction Count; and are Rule-based, Activity-based or Property-based.",
+    example: "Property-based: waive the interest on a Charge Property amount and apply an alternate interest; Activity-based: block the disbursement activity when the count exceeds a limit.",
+    why: "The same activity can be restricted many ways depending on the product's risk appetite.",
+    memory: "Three keys (balance/amount/count) × three bases (rule/activity/property).",
+    temenos: "Rules Tab (rule name, periodic attribute, source, value, activity class/activity, balance); Property Tab (property, run the rule, evaluation break/satisfy, apply/waive/alternate); scheduled interest and charge properties can be restricted via the Payment Schedule property.",
+    related: ["lpb2actrestrict", "lpb2qualifier"],
+  },
+  lpb2qualifier: {
+    title: "Product Qualifier Rules",
+    simple: "Rules evaluated to decide whether an activity should PASS or FAIL (or trigger a subsequent action), using a Rule Set with AND/OR/EQUAL logic and a frequency.",
+    example: "A qualifier rule set says a top-up is allowed only if arrears = 0 AND the product is CURRENT; otherwise it fails.",
+    why: "Complex 'allowed only if…' conditions need a proper rule engine, not a single flag.",
+    memory: "Qualifier = a mini rules engine gating an activity.",
+    temenos: "Rules Set Tab combines single/multiple rules; Action from AA.ACTION; Rule Expression uses AND/OR/EQUAL TO/NOT EQUAL TO; Rule Evaluation PASS/FAIL; Default Result; Review Run Rule Set for periodic evaluation.",
+    related: ["lpb2restricttypes", "lpb2actrestrict"],
+  },
+
+  // ---- Section 8: Change Product & Payoff ----
+  lpb2changeproduct: {
+    title: "CHANGE.PRODUCT Property Class",
+    simple: "An optional property class letting an arrangement switch to a different product — manually, automatically, or on a scheduled date/period/condition.",
+    example: "A promotional-rate loan automatically switches to the standard product at the end of the 2-year intro period.",
+    why: "Products with intro offers or lifecycle stages need a controlled switch mechanism.",
+    memory: "CHANGE.PRODUCT = swap this arrangement onto another product.",
+    temenos: "Optional; Date-specific, TRACKING; Allowed Product lists valid switch targets (same product group); Change Date field / Change Period field / Prior Days field; switch Automatic or Manual; scheduled switch can be relative to the customer's birth date.",
+    related: ["lpb2rollover", "aai1variation"],
+  },
+  lpb2rollover: {
+    title: "Rollover, Reset & Renegotiate",
+    simple: "Change activities: ROLLOVER renews with existing or revised conditions; RESET reapplies the product-level values; RENEGOTIATE changes conditions of different properties in one stretch.",
+    example: "At maturity a deposit ROLLOVERs for another term; a periodic mortgage RESETs to the current product rate.",
+    why: "Renewals and re-pricing are routine and must be predictable.",
+    memory: "Rollover = renew; Reset = snap to product; Renegotiate = change several at once.",
+    temenos: "RENEWAL.ACTIVITIES / CHANGE.PRODUCT; DEFAULT.ATTR.OPTION on the CHANGE.CONDITION activity — RESETTING reapplies product values, NON-RESETTING / NONE keeps negotiated ones; Loan Renewal may recalculate Renewal Date and Maturity Date.",
+    related: ["lpb2changeproduct", "lpb1recalc"],
+  },
+  lpb2payoff: {
+    title: "PAYOFF Property Class",
+    simple: "An optional property class that defines rules to simulate and process the full payoff (early settlement) of a lending arrangement.",
+    example: "A customer asks to clear a loan early; PAYOFF produces a quote including remaining accrued interest and any prepayment charge.",
+    why: "Early settlement is common and the quote must be exact and auditable.",
+    memory: "PAYOFF = the 'what would it cost to clear this today' engine.",
+    temenos: "Optional (Lending); Dated; expiry days for the payoff bill; Settlement Activity auto-invoked when payoff is simulated or paid; Tolerance Per cent / Amount / Action for shortfalls; SIMULATION.RUNNER front-end drives the Lending-Calculate-Payoff activity; prepayment charge as an activity or periodic rule charge.",
+    related: ["lpb2payoffstmt", "aa2additional"],
+  },
+  lpb2payoffstmt: {
+    title: "Payoff Statement & Calculation",
+    simple: "The payoff calculation totals dues for Account, Interest and Charge properties linked to the arrangement, plus balances not yet due, as at the payoff date.",
+    example: "The statement shows outstanding principal, accrued-but-unbilled interest, and a break fee — netting to the payoff figure.",
+    why: "The customer and the bank both need the settlement figure itemised.",
+    memory: "Payoff statement = every bucket totalled to one number.",
+    temenos: "Bills for regular payments and any rule (Periodic Rules, Activity Charges) break-rule charges may be settled or written off; credit in UNC of the Account property auto-settles dues; loan payoff settlement possible via a Payment Order directly from the payoff statement in the loan overview.",
+    related: ["lpb2payoff", "aa2findloan"],
+  },
+
+  // ---- Section 9: Closure & Reporting ----
+  lpb2closure: {
+    title: "CLOSURE Property Class",
+    simple: "An optional property class controlling how and when an arrangement closes — automated or manual, and on what trigger.",
+    example: "A term loan closes automatically once all balances reach zero on the maturity date.",
+    why: "Closed loans must stop accruing, release limits and archive cleanly.",
+    memory: "CLOSURE = the rules for shutting the arrangement down.",
+    temenos: "Optional (Lending); DATED, TRACKING, EXTERNAL, EXTERNAL FINANCIAL, MEMO; Closure Method Automatic / Manual / Online; Posting Restriction code and Close Online (Accounts product line only).",
+    related: ["lpb2closuretype", "lpb2cooling"],
+  },
+  lpb2closuretype: {
+    title: "Closure Type (Maturity / Balance / Defer)",
+    simple: "MATURITY = closure depends on the maturity date; BALANCE = closure activity is scheduled when balances reach zero; DEFER.CLOSURE = closure processing waits on the deferred maturity date.",
+    example: "An overdraft uses BALANCE closure — it shuts when it's paid off, whenever that is.",
+    why: "Different products reach 'finished' in different ways.",
+    memory: "Maturity = by date; Balance = when it hits zero; Defer = wait for the deferred date.",
+    temenos: "Closure Period indicates when the CLOSURE activity is processed for automatic closure.",
+    related: ["lpb2closure", "lpb2cooling"],
+  },
+  lpb2cooling: {
+    title: "Cooling Period (at Closure)",
+    simple: "A window after opening during which the customer can cancel the loan with charges waived; the cooling date can be date-adjusted for non-working days.",
+    example: "A borrower cancels within the 14-day cooling period; interest and charges booked so far are reversed.",
+    why: "Consumer-credit regulation gives borrowers a right to withdraw.",
+    memory: "Cooling period = the no-questions cancellation window.",
+    temenos: "Set on the TERM.AMOUNT property class or the CLOSURE property class; Cooling Date Adjustment Forward / Null / Calendar; Waive Bill Type should be 'All' for charge property class; enabled only in the Lending product line.",
+    related: ["lpb2closure", "lpb1termamt"],
+  },
+  lpb2reporting: {
+    title: "REPORTING Property Class",
+    simple: "An optional property class that integrates an arrangement with Position Management and IFRS reporting, and supports APR and IFRS charge-off.",
+    example: "A loan feeds the bank's interest-rate-gap and currency positions, and its effective interest rate for IFRS.",
+    why: "Treasury and IFRS reporting need arrangement-level data consolidated into time bands.",
+    memory: "REPORTING property = plug the loan into Treasury and IFRS.",
+    temenos: "Optional (Lending); IFRS accounting via the Reporting property class; Product Conditions tabs Reporting / IFRS Details / Position Management / Annual Percentage; IFRS Charge Off updates CHARGEOFF.STATUS in AA.ACCOUNT.DETAILS.",
+    related: ["lpb2position", "lpb2apr"],
+  },
+  lpb2position: {
+    title: "Position Management (PM)",
+    simple: "A framework helping banks manage liquidity (cash flow / CAS), interest-rate risk (GAP) and currency risk (FXP) from arrangement data.",
+    example: "PM.GAP shows the mismatch between rate-sensitive assets and liabilities in each maturity band.",
+    why: "The Treasury desk needs real-time behavioural and contractual cash flows by time band.",
+    memory: "PM = liquidity, rate gap, FX — the Treasury view of the book.",
+    temenos: "Enquiries PM.CAS (Cash Flow Position), PM.GAP (Interest Mismatch / GAP), PM.FXPOS (Forex Position and Break-Even); cash flows consolidated into user-defined time periods.",
+    related: ["lpb2reporting", "lpb2apr"],
+  },
+  lpb2apr: {
+    title: "APR Calculation",
+    simple: "The Annual Percentage Rate can be calculated by Cashflow or by Interest, across Lending, Deposits and Accounts product lines, and recalculated when cash flow changes.",
+    example: "Adding a fee to a loan changes its APR; the system recalculates it at new-arrangement time and at each interest-frequency instance.",
+    why: "Regulators require a single comparable rate that includes fees.",
+    memory: "APR = the all-in rate, by cashflow or by interest.",
+    temenos: "APR Type on the product; Exclude Property / Linked Interest Property fields; multiple APR types via AA.PAYMENT.TYPE; enabled for simulation contracts; recalculated whenever cash flow is affected by an eligible activity (UPDATE.APR.ACTIVITY).",
+    related: ["lpb2reporting", "lpb2position"],
+  },
+
+  // ---- Section 10: Building Lending Products ----
+  lpb2prodline: {
+    title: "AA.PRODUCT.LINE (Implementation)",
+    simple: "The high-level definition of a business line (Lending, Deposits, Accounts); only Temenos releases these and only some fields can be modified.",
+    example: "The LENDING product line carries LINE.ATTRIBUTE, currency and REPLAY settings shared by every lending product.",
+    why: "The line sets what's common to a whole family before any client configuration.",
+    memory: "Product Line = the family, Temenos-owned.",
+    temenos: "Pre-defined by TEMENOS; only the description is modifiable; LINE.ATTRIBUTE field for CCY and REPLAY; for other lines, Internet Services should be left blank; property classes present at line level must be Mandatory or Optional.",
+    related: ["lpb2prodgroup", "aai1hierarchy"],
+  },
+  lpb2prodgroup: {
+    title: "AA.PRODUCT.GROUP (Implementation)",
+    simple: "A client-defined grouping of products under a line; it fixes which property classes are Mandatory or Optional and holds the mandatory Properties.",
+    example: "A 'Personal Loans' group makes INTEREST, ACCOUNT and PAYMENT.SCHEDULE mandatory and adds the client's named Properties.",
+    why: "The group is where a client first shapes the product family for its own use.",
+    memory: "Product Group = the client's shelf of related products.",
+    temenos: "Group Type Internal / External; a mandatory Property must be defined at product level; REBUILD.ACTIVITIES = Yes generates the activity set; Properties for a Property are generated automatically when it's added to a group.",
+    related: ["lpb2prodline", "lpb2designer"],
+  },
+  lpb2designer: {
+    title: "AA.PRODUCT.DESIGNER (Implementation)",
+    simple: "The table where a product is designed under its group — its currencies, which optional properties apply, and their effective dates.",
+    example: "The designer for 'Staff Personal Loan' enables the optional CHARGE.OVERRIDE property and sets the product currency to USD.",
+    why: "This is where an actual sellable product takes shape from the group's components.",
+    memory: "Product Designer = assemble the product from the group's parts.",
+    temenos: "Product Currency multi-value; calculation-related features (Source Type / Source Property / calculation frequency); PARENT.PRODUCT defines a parent whose properties are inherited; non-saleable acts only as a parent; must pass Proofing before it can be published.",
+    related: ["lpb2prodgroup", "lpb2proofpublish"],
+  },
+  lpb2proofpublish: {
+    title: "Proofing & Publishing",
+    simple: "A three-stage process — Design, Proof, Publish. Proofing validates conditions, accounting and mandatory properties; publishing adds the product to the catalog and cascades from parent to children.",
+    example: "A designed product fails proof for a missing accounting rule; fixed and re-proofed, it publishes to the catalog.",
+    why: "No product should reach customers with configuration errors.",
+    memory: "Design → Proof → Publish.",
+    temenos: "Product Designer → Proofed Products → Product Catalog; Available Date / Expiry Date govern when the product is sellable; proofing lists errors and suggests fixes; publishing performs proof top-down to all children.",
+    related: ["lpb2designer", "lpb2catalog"],
+  },
+  lpb2catalog: {
+    title: "Product Catalogue",
+    simple: "The list of live, published products from which new arrangements are created; a product must be proofed, published and within its Available/Expiry dates to appear.",
+    example: "A relationship manager opens the catalogue and sees only the products the customer is eligible for.",
+    why: "The catalogue is the single source of what can actually be sold today.",
+    memory: "Catalogue = the menu customers can order from.",
+    temenos: "Populated by publishing; eligibility and variation filter what each customer sees; existing arrangements continue on the product version they were created from even after it expires.",
+    related: ["lpb2proofpublish", "aa2catalog"],
+  },
 };
 
 const DIAGRAMS = {
@@ -1306,6 +2412,197 @@ const DIAGRAMS = {
       { label: "Arrangement data", sub: "written per property class", tag: "AA.ARR.<CLASS>" },
     ],
   },
+};
+
+// ---- Sandbox drills: step-by-step things to try in a Temenos training sandbox.
+// Paths/labels are Temenos Model Bank defaults in the classic Browser UI — verify
+// the exact menu/tile names in your own sandbox and correct them as you go.
+// Add a drill = append here; each `related` id must exist in CONCEPTS.
+const LABS = [
+  {
+    id: "lab-rbhp", courseId: "fif", section: "fif-1",
+    title: "Explore your Role-Based Home Page",
+    goal: "See how role → USSP → RBHP → functions works by navigating your own home page.",
+    app: "—", menu: "Log in with your training user",
+    prereq: "A training user with a role assigned, and at least one customer in the system.",
+    steps: [
+      { do: "Log in and note which home page loads.", expect: "A landing page whose menus/tiles are limited to your role — this is your RBHP." },
+      { do: "Open the Single Customer View (SCV) and search a customer by name or mnemonic.", expect: "One screen with the customer's record, accounts, loans, documents and relationships tabs." },
+      { do: "From the dashboard open the Work List / pending items.", expect: "A list of unauthorised records (driven by the EXCEPTION enquiry) you can click through to action." },
+      { do: "Try to open an application that is not on your menu (type its name in the command line).", expect: "Access denied if it is outside your USSP." },
+    ],
+    verify: "You can state your role and name two functions your RBHP gives you and one it hides.",
+    related: ["rbhp", "ussp", "scv", "worklist"],
+  },
+  {
+    id: "lab-customer", courseId: "fif", section: "fif-2",
+    title: "Create and authorise a customer",
+    goal: "Create a customer-centric record end to end, including the input → authorise cycle.",
+    app: "CUSTOMER", menu: "Customer > Create Customer  (RBHP tile may be 'Customer' or 'New Customer')",
+    prereq: "Two users: one to input, one to authorise.",
+    steps: [
+      { do: "Open Create Customer.", expect: "A blank customer input screen; the numeric ID (7–10 digits) is reserved / auto-generated." },
+      { do: "Enter Mnemonic, Short Name and Name(s).", expect: "Accepted; the mnemonic → ID link is written to MNEMONIC.CUSTOMER." },
+      { do: "Enter address (Street, Town/Country) and the Sector and Target.", expect: "Sector drives downstream processing; Target is the segmentation code." },
+      { do: "Set Customer Status, Account Officer (DAO), Language, Nationality, Residence.", expect: "The Account Officer you set will default onto every transaction for MIS by officer." },
+      { do: "Commit the record.", expect: "Status INAU (input, unauthorised)." },
+      { do: "Log in as the second user, open the Work List, find the customer and authorise.", expect: "Status becomes live; the record can be amended anytime but never reversed." },
+    ],
+    verify: "You can find the customer again by its mnemonic in the SCV.",
+    related: ["custrec", "custcentric", "custid", "mnemonic", "dao", "custtabs"],
+  },
+  {
+    id: "lab-relation", courseId: "fif", section: "fif-2",
+    title: "Link a relationship between two customers",
+    goal: "See that only one side of a relationship is entered — the reverse auto-defaults.",
+    app: "RELATION", menu: "Open customer in amend mode > Relationship section",
+    prereq: "Two authorised customers.",
+    steps: [
+      { do: "Open the first customer in amend mode and go to the Relationship section.", expect: "A table for related customer ID + relation code." },
+      { do: "Add the second customer's ID and a relation code (e.g. spouse). Commit and authorise.", expect: "Relationship saved on the first customer." },
+      { do: "Open the second customer and check its relationships.", expect: "The reverse relationship has auto-defaulted — you did not enter it." },
+    ],
+    verify: "Both customers show the relationship; only one side was set up.",
+    related: ["relation", "counterparty"],
+  },
+  {
+    id: "lab-group", courseId: "fif", section: "fif-4",
+    title: "Create a lending group",
+    goal: "Build a group, add members, and read it back in the Single Group View.",
+    app: "GROUP", menu: "Group Management > Create Group",
+    prereq: "5+ authorised customers to use as members.",
+    steps: [
+      { do: "Open Create Group and select the Group Type.", expect: "The group type sets limits, product eligibility and meeting rules." },
+      { do: "Enter the group name and link the Centre.", expect: "A group links to only one centre." },
+      { do: "Add members (each must already exist as a customer; 5+ members, mutual guarantee).", expect: "Members added to the group's member table." },
+      { do: "Set the meeting / centre-meeting schedule. Commit and authorise.", expect: "Group is live." },
+      { do: "Open the Single Group View (SGV) for the group.", expect: "360° view — members, meeting details, available limit, member transfers." },
+    ],
+    verify: "The group is authorised and appears in the SGV with its members.",
+    note: "Applying a Credit Block to a member sets the BLOCKED field on that customer.",
+    related: ["creategroup", "grouptype", "grouplimits", "centre", "grouplending", "groupenq"],
+  },
+  {
+    id: "lab-psos", courseId: "fif", section: "fif-6",
+    title: "Set up a Payment Source, Obligation and Split",
+    goal: "Build the money-management chain and watch it act at COB.",
+    app: "EB.ALERT.REQUEST (source) · EM.PS.OBLIGATION.INPUT (obligation) · EM.PS.PAYMENT.SPLIT (split)",
+    menu: "All three are set up from the customer's SCV",
+    prereq: "An authorised customer with an account; EVENT (Business Events) service running in AUTO.",
+    steps: [
+      { do: "From the SCV create a Payment Source — what incoming money triggers a split (e.g. a salary credit).", expect: "Source recorded via EB.ALERT.REQUEST." },
+      { do: "Create a Payment Obligation — what the money is for, with an amount type (User Defined / Track Loan Repayment / Track Loan Arrears) and a next run date.", expect: "Obligation saved via EM.PS.OBLIGATION.INPUT." },
+      { do: "Create a Payment Split — how incoming funds are divided across obligations. Commit and authorise all three.", expect: "Split saved via EM.PS.PAYMENT.SPLIT." },
+      { do: "Credit the account with an incoming payment, then run COB (or wait for the obligation's next run date).", expect: "At COB the funds are split per the obligation; a split to an inactive obligation is skipped." },
+    ],
+    verify: "After COB the incoming payment has been divided per your split — check the obligation balances.",
+    related: ["psos", "paymentsource", "paymentobligation", "paymentsplit", "psprocessing"],
+  },
+  {
+    id: "lab-dividend", courseId: "fif", section: "fif-5",
+    title: "Run the Dividend Runner",
+    goal: "Simulate then post a dividend and read the results table.",
+    app: "EM.DIVIDEND.RUN", menu: "Dividend Processing > Dividend Runner",
+    prereq: "Savings accounts with balance history and DVND.CALC = Yes.",
+    steps: [
+      { do: "Confirm eligible accounts have DVND.CALC = Yes.", expect: "Accounts with DVND.CALC = No are excluded from the run." },
+      { do: "Open the Dividend Runner, set the period and the Rate, and run in Simulation mode.", expect: "Per account: dividend = (Dividend Points ÷ Days in Year) × Rate, points from the average daily balance above the minimum." },
+      { do: "Review the simulation in EM.DIVIDEND.RUN.DETAILS.", expect: "Per-account points, balance and dividend amount." },
+      { do: "If correct, run in Post mode.", expect: "Dividends posted to accounts and a note issued to each member." },
+    ],
+    verify: "EM.DIVIDEND.RUN.DETAILS shows the posted dividends and account balances have increased.",
+    related: ["dividend", "divrunner", "divformula", "divminbal", "divconfig"],
+  },
+  {
+    id: "lab-bulkao", courseId: "fif", section: "fif-3",
+    title: "Bulk account-officer transfer via file upload",
+    goal: "Move a portfolio between officers using the DFE file-upload path.",
+    app: "File Upload (DFE) + SG.BA.CHANGE.DAO", menu: "Task Management / File Upload",
+    prereq: "TM.PROCESS and EVENT services in AUTO; a file of customers + the new officer.",
+    steps: [
+      { do: "Check the column-to-field mapping in DFE.MAPPING matches your file's columns.", expect: "Each file column maps to the right system field." },
+      { do: "Upload the file.", expect: "One record per row lands in INAU (input, unauthorised)." },
+      { do: "Authorise the bulk change.", expect: "The SG.BA.CHANGE.DAO service auto-starts and reassigns the portfolios." },
+    ],
+    verify: "The selected customers now show the new Account Officer.",
+    related: ["dfe", "fileuploadproc", "fileuploadtables", "bulkao"],
+  },
+];
+
+// Screenshot per concept, cropped from the course slide decks (public/slides/<course>/).
+const SLIDE_IMG = {
+  rbhp: "rbhp", allinone: "allinone", scv: "scv", sgv: "sgv", worklist: "worklist",
+  landingpages: "landingpages", roles: "roles",
+  custcentric: "custcentric", custrec: "custrec", relation: "relation", dao: "dao", prospect: "prospect",
+  custtabs: "custtabs", shadowlimit: "shadowlimit", nonindiv: "nonindiv", scvtabs: "scvtabs", bankcust: "bankcust",
+  taskmgmt: "taskmgmt", taskstruct: "taskstruct", taskactions: "taskactions", notifications: "notifications",
+  taskdelegates: "taskdelegates", taskservices: "taskservices", dfe: "dfe", fileuploadtables: "fileuploadtables",
+  fileuploadproc: "fileuploadproc", bulkao: "bulkao",
+  groupapp: "groupapp", grouptype: "grouptype", grouplimits: "grouplimits", groupparams: "groupparams",
+  creategroup: "creategroup", groupmaint: "groupmaint", centre: "centre",
+  divformula: "divformula", divminbal: "divminbal", divconfig: "divconfig", divrunner: "divrunner",
+  paymenttypes: "paymenttypes", obligationaction: "obligationaction", obligationtype: "obligationtype",
+  paymentsource: "paymentsource", paymentobligation: "paymentobligation", paymentsplit: "paymentsplit",
+  psprocessing: "psprocessing",
+  // Course 2 — AA Lending Foundation Part 1
+  aa2overview: "aa2overview", aa2repaystruct: "aa2repaystruct", aa2repaytypes: "aa2repaytypes",
+  aa2ratetypes: "aa2ratetypes", aa2prodline: "aa2prodline", aa2prodgroup: "aa2prodgroup",
+  aa2product: "aa2product", aa2buscomp: "aa2buscomp", aa2prodcond: "aa2prodcond",
+  aa2prodvsarr: "aa2prodvsarr", aa2catalog: "aa2catalog", aa2ids: "aa2ids", aa2roles: "aa2roles",
+  aa2commit: "aa2commit", aa2repayfreq: "aa2repayfreq", aa2settle: "aa2settle",
+  aa2properties: "aa2properties", aa2create: "aa2create", aa2overrides: "aa2overrides",
+  aa2authorise: "aa2authorise", aa2findloan: "aa2findloan", aa2ovbasic: "aa2ovbasic",
+  aa2ovconditions: "aa2ovconditions", aa2ovfinancial: "aa2ovfinancial", aa2accrued: "aa2accrued",
+  aa2additional: "aa2additional",
+  // Course 3 — AA Lending Foundation Part 2
+  aa3deps: "aa3deps", aa3ratetypes: "aa3ratetypes", aa3floating: "aa3floating",
+  aa3periodic: "aa3periodic", aa3rfr: "aa3rfr", aa3daybasis: "aa3daybasis",
+  aa3schedules: "aa3schedules", aa3tiers: "aa3tiers", aa3charges: "aa3charges",
+  aa3overdue: "aa3overdue", aa3commitment: "aa3commitment", aa3activity: "aa3activity",
+  aa3disburse: "aa3disburse", aa3limits: "aa3limits", aa3suspend: "aa3suspend",
+  aa3amend: "aa3amend", aa3holiday: "aa3holiday", aa3hands: "aa3hands",
+  aa3sim: "aa3sim", aa3reverse: "aa3reverse",
+  // Course 4 — AA Implementation Part 1
+  aai1silo: "aai1silo", aai1propclass: "aai1propclass", aai1property: "aai1property",
+  aai1prodcond: "aai1prodcond", aai1hierarchy: "aai1hierarchy", aai1inherit: "aai1inherit",
+  aai1acctcontract: "aai1acctcontract", aai1arr: "aai1arr", aai1builder: "aai1builder",
+  aai1proof: "aai1proof", aai1variation: "aai1variation", aai1proptype: "aai1proptype",
+  // Course 5 — AA Implementation Part 2
+  aai2storage: "aai2storage", aai2altid: "aai2altid", aai2actclass: "aai2actclass",
+  aai2rebuild: "aai2rebuild", aai2launch: "aai2launch", aai2reverse: "aai2reverse",
+  aai2company: "aai2company", aai2alerts: "aai2alerts", aai2external: "aai2external",
+  aai2sim: "aai2sim",
+  // Course 6 — AA Common Building Blocks Part 1
+  cb1overview: "cb1overview", cb1deps: "cb1deps", cb1daybasis: "cb1daybasis", cb1currency: "cb1currency",
+  cb1tables: "cb1tables", cb1propclass: "cb1propclass", cb1property: "cb1property", cb1prodcond: "cb1prodcond",
+  cb1negotiable: "cb1negotiable", cb1attropt: "cb1attropt", cb1nrrules: "cb1nrrules",
+  cb1customer: "cb1customer", cb1custrole: "cb1custrole", cb1benefowner: "cb1benefowner", cb1relpricing: "cb1relpricing",
+  cb1eligibility: "cb1eligibility", cb1elrules: "cb1elrules", cb1variation: "cb1variation", cb1pricing: "cb1pricing",
+  cb1channelpricing: "cb1channelpricing",
+  cb1officers: "cb1officers", cb1actmap: "cb1actmap", cb1consol: "cb1consol",
+  // Course 7 — AA Common Building Blocks Part 2
+  cb2acctevents: "cb2acctevents", cb2balances: "cb2balances", cb2baltype: "cb2baltype", cb2balprefix: "cb2balprefix",
+  cb2acctpc: "cb2acctpc", cb2acctrule: "cb2acctrule", cb2ncfc: "cb2ncfc", cb2suspense: "cb2suspense", cb2txnentry: "cb2txnentry",
+  cb2balmaint: "cb2balmaint", cb2capture: "cb2capture", cb2adjust: "cb2adjust", cb2hisbalance: "cb2hisbalance",
+  cb2narrative: "cb2narrative", cb2narrparam: "cb2narrparam", cb2narrformat: "cb2narrformat", cb2printstmt: "cb2printstmt",
+  cb2cob: "cb2cob", cb2decision: "cb2decision", cb2dlm: "cb2dlm", cb2archive: "cb2archive", cb2nolog: "cb2nolog",
+  // Course 8 — AA Lending Product Building Part 1
+  lpb1termamt: "lpb1termamt", lpb1commit: "lpb1commit", lpb1maturity: "lpb1maturity", lpb1revolving: "lpb1revolving", lpb1tranche: "lpb1tranche",
+  lpb1account: "lpb1account", lpb1dormancy: "lpb1dormancy", lpb1basedate: "lpb1basedate", lpb1posting: "lpb1posting",
+  lpb1limit: "lpb1limit", lpb1limitref: "lpb1limitref", lpb1netting: "lpb1netting",
+  lpb1interest: "lpb1interest", lpb1inttypes: "lpb1inttypes", lpb1rfr: "lpb1rfr", lpb1tiered: "lpb1tiered",
+  lpb1rateadj: "lpb1rateadj", lpb1linked: "lpb1linked",
+  lpb1tax: "lpb1tax", lpb1taxsplit: "lpb1taxsplit",
+  lpb1activitycharge: "lpb1activitycharge", lpb1charge: "lpb1charge", lpb1chargeoverride: "lpb1chargeoverride",
+  lpb1periodiccharge: "lpb1periodiccharge", lpb1triggercharge: "lpb1triggercharge",
+  lpb1payschedule: "lpb1payschedule", lpb1paytypes: "lpb1paytypes", lpb1payfreq: "lpb1payfreq",
+  lpb1recalc: "lpb1recalc", lpb1holidays: "lpb1holidays",
+  lpb1settlement: "lpb1settlement", lpb1receiving: "lpb1receiving", lpb1directdebit: "lpb1directdebit", lpb1offset: "lpb1offset",
+};
+const slideImgSrc = (conceptId) => {
+  const f = SLIDE_IMG[conceptId];
+  const course = conceptCourse[conceptId];
+  return f && course ? `/slides/${course}/${f}.jpg` : null;
 };
 
 const q = (question, options, answer, explanation) => ({ question, options, answer, explanation });
@@ -1650,6 +2947,304 @@ const COURSES = [
       q("Simulation data is stored in…", ["AA.ARR.<class>", "AA.SIM.<class>", "AA.PRD.CAT.<class>", "AA.ARRANGEMENT"], 1, "SIM files mirror the live ARR tables (unless IGNORE.SIM)."),
     ],
   },
+  {
+    id: "acbb1",
+    code: "TR3PRCBB1",
+    title: "AA Common Building Blocks — Part 1",
+    description: "The components shared across Lending, Deposits and Accounts: reusable tables, product conditions, the Customer and Eligibility property classes, pricing, officers, activity mapping and reporting.",
+    sections: [
+      {
+        id: "acbb1-1", title: "Product Overview & Dependencies",
+        description: "How one AA engine builds three arrangement families, and what it depends on.",
+        concepts: ["cb1overview", "cb1deps", "cb1daybasis", "cb1currency"],
+        quiz: [
+          q("Lending, Deposit and Account arrangements are…", ["three separate Transact modules", "built by the same AA engine from shared components", "unrelated to AA", "only for loans"], 1, "One engine, three arrangement families, common components."),
+          q("Which does AA NOT depend on?", ["CUSTOMER", "ACCOUNT", "Accounting", "the SWIFT network directly"], 3, "AA uses CUSTOMER, ACCOUNT, Delivery, Accounting and Limits."),
+          q("Interest day basis 'A' means…", ["actual/365", "30/360", "actual/360", "special"], 1, "A = 30/360; E = actual/365; B = actual/360."),
+          q("Holidays for a currency are checked via…", ["DVND.CALC", "BUS.DAY.CENTRES linked to the currency", "the customer record", "DFE.MAPPING"], 1, "BUS.DAY.CENTRES on the Account product condition; due dates move around them."),
+          q("Limits apply to which product lines?", ["Deposits only", "Lending and Accounts", "all three equally", "none"], 1, "Limits are relevant to the Lending and Accounts product lines."),
+        ],
+      },
+      {
+        id: "acbb1-2", title: "Reusable Component Tables",
+        description: "The tables that hold the building blocks and how class vs instance works.",
+        concepts: ["cb1tables", "cb1propclass", "cb1property", "cb1prodcond"],
+        quiz: [
+          q("Which table does Temenos release (not the client)?", ["AA.PROPERTY", "AA.PROPERTY.CLASS", "AA.PRD.DES.<class>", "AA.ACTIVITY"], 1, "The *.CLASS tables are Temenos-released; clients create instances."),
+          q("A Property is attached to the…", ["Product Line", "Product Group where it is first used", "Arrangement", "Customer"], 1, "Properties attach at the Product Group."),
+          q("What can a client change on a Property Class?", ["its actions", "its attributes", "only the description", "its balances"], 2, "Clients may only edit the description."),
+          q("A Product Condition's ID typically includes…", ["only the class name", "class, property, currency and effective date", "the customer ID", "the activity reference"], 1, "e.g. INTEREST_PRINCIPALINT-USD-20200102."),
+          q("Two properties of the same class on one product…", ["are not allowed", "carry separate values and balances", "must share a balance", "merge automatically"], 1, "e.g. PRINCIPALINT and PENALTYINT of the INTEREST class."),
+        ],
+      },
+      {
+        id: "acbb1-3", title: "Product Condition Options",
+        description: "Negotiability, resetting behaviour and per-attribute negotiation rules.",
+        concepts: ["cb1negotiable", "cb1attropt", "cb1nrrules"],
+        quiz: [
+          q("DEFAULT.NEGOTIABLE controls…", ["the interest rate", "whether the arrangement-maker can change attribute values", "the currency", "the effective date"], 1, "It's the class-wide switch for user freedom."),
+          q("A RESETTING attribute option means at rollover the value…", ["stays as negotiated", "reverts to the product", "is deleted", "doubles"], 1, "RESETTING snaps back to product; NON-RESETTING keeps the deal."),
+          q("Which overrides the class-wide negotiable default?", ["nothing", "per-attribute NR.* rules", "the customer", "COB"], 1, "Attribute-level negotiation rules always win."),
+          q("NR.TYPE = MAXIMUM with NR.MESSAGE = ERROR means a higher value is…", ["allowed with a warning", "blocked", "rounded down", "ignored"], 1, "ERROR blocks it; OVERRIDE would just warn."),
+          q("NR.VALUE.SOURCE lets a rule limit be…", ["a fixed number only", "read dynamically from a balance", "set by the customer", "random"], 1, "Format BALANCE.TYPE>Name reads a live balance."),
+        ],
+      },
+      {
+        id: "acbb1-4", title: "Customer Property Class",
+        description: "Linking customers to arrangements: roles, beneficial owners and relationship pricing.",
+        concepts: ["cb1customer", "cb1custrole", "cb1benefowner", "cb1relpricing"],
+        quiz: [
+          q("The CUSTOMER property class holds…", ["the loan balance", "the customers on the arrangement and their roles/limits", "the product design", "the accounting entries"], 1, "Who's on the deal, in what capacity."),
+          q("Roles like Applicant and Guarantor are defined in…", ["CUSTOMER", "AA.CUSTOMER.ROLE", "RELATION", "AA.ARRANGEMENT"], 1, "One record per role, with its rules."),
+          q("The first beneficial owner is used for…", ["nothing", "accounting, tax and limits", "delivery only", "the mnemonic"], 1, "It's the 'real' owner the books care about."),
+          q("A customer counts toward household pricing only if…", ["they have a loan", "their role is flagged Relationship Pricing Customer", "they are the guarantor", "COB has run"], 1, "The flag on AA.CUSTOMER.ROLE includes them in pricing evaluation."),
+          q("Can the owner of an arrangement be changed?", ["never", "yes, via an activity", "only at COB", "only by Temenos"], 1, "An activity can change the beneficial owner."),
+        ],
+      },
+      {
+        id: "acbb1-5", title: "Eligibility & Pricing",
+        description: "Deciding who can have a product, and pricing it differently per customer and channel.",
+        concepts: ["cb1eligibility", "cb1elrules", "cb1variation", "cb1pricing", "cb1channelpricing"],
+        quiz: [
+          q("The ELIGIBILITY property class decides…", ["the interest rate", "whether a customer may have the product", "the repayment schedule", "the officer"], 1, "It filters the catalogue and blocks wrong sales."),
+          q("Reusable eligibility logic is built in…", ["AA.PRODUCT.DESIGNER", "the Rules Manager (ER.RULES)", "DFE.MAPPING", "the Teller page"], 1, "Rules are versioned and referenced by the product condition."),
+          q("A Product Variation is chosen by…", ["the branch manager", "matching the customer against each variation's eligibility in priority order", "random", "the customer typing a code"], 1, "Pass the eligibility, get that priced version."),
+          q("Which is NOT a pricing method here?", ["Product Variation", "Relationship Pricing", "Promotional Pricing", "Manual ledger posting"], 3, "The four levers are Variation, Relationship, Promotion, Channel."),
+          q("Channel Pricing gives a better rate for…", ["large deposits", "using a specific channel e.g. mobile", "being a guarantor", "paying early"], 1, "CHANNEL is used as a variation eligibility criterion."),
+        ],
+      },
+      {
+        id: "acbb1-6", title: "Officers, Activity Mapping & Consolidation",
+        description: "Who owns an arrangement, turning transaction codes into activities, and feeding reports.",
+        concepts: ["cb1officers", "cb1actmap", "cb1consol"],
+        quiz: [
+          q("Officer IDs on the OFFICERS property must be valid in…", ["AA.CUSTOMER.ROLE", "DEPT.ACCT.OFFICER", "CUSTOMER", "EB.LOOKUP"], 1, "Primary/Other officers validate against DEPT.ACCT.OFFICER."),
+          q("Activity Mapping turns a __ into an AA activity.", ["customer ID", "transaction code", "balance", "rate"], 1, "External transaction codes map to the activity they trigger."),
+          q("The Activity Mapping property class is…", ["optional", "mandatory, one property per Product Group", "per arrangement", "Temenos-only"], 1, "Mandatory; values track at arrangement level only."),
+          q("CONSOLIDATE.COND accepts fields from…", ["AA.ARRANGEMENT", "AA.ACCOUNT.DETAILS", "the customer record", "DFE.MAPPING"], 1, "It maps AA balances into standard reporting fields."),
+          q("AA's principal asset types also serve as…", ["activity codes", "balance types", "customer roles", "currencies"], 1, "e.g. CURACCOUNT, CURCOMMITMENT, ACCLOANINT."),
+        ],
+      },
+    ],
+    assessment: [
+      q("Lending, Deposits and Accounts arrangements…", ["are separate modules", "share one AA engine and common components", "don't use AA", "are Temenos-only"], 1, "One engine, three families."),
+      q("The *.CLASS building-block tables are released by…", ["clients", "Temenos", "the regulator", "the branch"], 1, "Clients create instances (Property, Activity, etc.)."),
+      q("A Property attaches at the…", ["Product Line", "Product Group", "Arrangement", "Company"], 1, "The Product Group where it is first used."),
+      q("A client may change which part of a Property Class?", ["actions", "attributes", "description only", "balance prefix"], 2, "Only the description."),
+      q("DEFAULT.NEGOTIABLE is overridden by…", ["nothing", "per-attribute NR.* rules", "the currency", "the officer"], 1, "Attribute-level negotiation rules always win."),
+      q("NON-RESETTING means a negotiated value…", ["reverts at rollover", "is kept at rollover", "is deleted", "warns"], 1, "RESETTING reverts; NON-RESETTING keeps it."),
+      q("The first beneficial owner drives…", ["delivery", "accounting, tax and limits", "the mnemonic", "nothing"], 1, "It's the owner the books use."),
+      q("Reusable eligibility rules live in…", ["AA.PRODUCT.DESIGNER", "ER.RULES / ER.RULES.VERSION", "RELATION", "CUSTOMER"], 1, "Built in the Rules Manager, versioned, proofed."),
+      q("A Product Variation is selected by…", ["a promo code", "the customer passing its eligibility, in priority order", "the teller", "COB"], 1, "Default product covers failed eligibility."),
+      q("Activity Mapping maps…", ["customers to roles", "transaction codes to AA activities", "balances to reports", "rates to tiers"], 1, "So account-based transactions drive the right activity."),
+      q("Officer IDs validate against…", ["AA.CUSTOMER.ROLE", "DEPT.ACCT.OFFICER", "EB.LOOKUP", "COMPANY"], 1, "Primary and Other officers."),
+      q("Consolidation maps AA balances into fields from…", ["AA.ARRANGEMENT", "AA.ACCOUNT.DETAILS", "the customer record", "SWIFT"], 1, "CONSOLIDATE.COND; value date = REPORT.END.DATE."),
+    ],
+  },
+  {
+    id: "acbb2",
+    code: "TR3PRCBB2",
+    title: "AA Common Building Blocks — Part 2",
+    description: "AA accounting concepts, the Accounting and Balance Maintenance property classes, statement narratives, COB processing and Data Lifecycle Management.",
+    sections: [
+      {
+        id: "acbb2-1", title: "AA Accounting Concepts",
+        description: "Accounting events, arrangement balances, balance types and prefixes.",
+        concepts: ["cb2acctevents", "cb2balances", "cb2baltype", "cb2balprefix"],
+        quiz: [
+          q("An AA activity produces ledger entries by…", ["writing to CUSTOMER", "raising an accounting event that allocation rules turn into entries", "calling SWIFT", "editing AA.PRODUCT.DESIGNER"], 1, "Activity → event → allocation rule → entries."),
+          q("A single property can hold…", ["exactly one balance", "several balances, one per life-cycle state", "no balances", "only a due balance"], 1, "Committed, Available, Due, Overdue buckets, Not Accrued, etc."),
+          q("Additional balance types are created in…", ["AA.PRODUCT", "AC.BALANCE.TYPE", "EB.LOOKUP", "RELATION"], 1, "Some are hard-coded in the property class; AC.BALANCE.TYPE adds more."),
+          q("The balance suffix SP indicates…", ["current", "suspended (non-accrual)", "accrued", "aged"], 1, "SP marks suspended balances; prefixes (CUR/DUE/ACC/AGE) mark the stage."),
+          q("A virtual balance type…", ["can't be reported", "sums specified real balances for calculation", "is customer-facing only", "replaces the ledger"], 1, "Virtual types aggregate for calculation purposes."),
+        ],
+      },
+      {
+        id: "acbb2-2", title: "Accounting Product Condition",
+        description: "The ACCOUNTING property class, allocation rules, internal charges and suspense.",
+        concepts: ["cb2acctpc", "cb2acctrule", "cb2ncfc", "cb2suspense", "cb2txnentry"],
+        quiz: [
+          q("The ACCOUNTING property class is…", ["optional", "mandatory and holds the soft accounting rules", "customer-facing", "editable at arrangement level"], 1, "Mandatory for Lending, Deposits, Accounts; no entry of its own."),
+          q("An allocation rule turns one event into…", ["a customer record", "balanced ledger entries (target, contra, movement)", "a new product", "an activity class"], 1, "AC.ALLOCATION.RULE + AC.POSTING.DETAIL."),
+          q("Non-customer-facing charges are…", ["shown on the statement", "booked internally and amortised between the bank's account and P&L", "waived", "customer fees"], 1, "e.g. origination costs under FASB — amortised to maturity."),
+          q("AASUSPENSE is used to…", ["hide balances", "hold a movement between cash arriving and the arrangement processing it", "close loans", "print statements"], 1, "Improves performance and reconciliation; supports Process Dated Accounting."),
+          q("TXN.ENTRY.MB shows…", ["customer relationships", "ledger entries raised by an external application, by activity reference", "the product catalogue", "overdue bills"], 1, "External postings don't store contract IDs in ECB."),
+        ],
+      },
+      {
+        id: "acbb2-3", title: "Balance Maintenance",
+        description: "Capturing, adjusting and writing off balances — mainly for migration.",
+        concepts: ["cb2balmaint", "cb2capture", "cb2adjust", "cb2hisbalance"],
+        quiz: [
+          q("The BALANCE.MAINTENANCE property class is mainly for…", ["daily interest", "migrating existing loans/deposits into AA", "printing statements", "COB"], 1, "Capture bills/balances and adjust for takeovers."),
+          q("Capture Bill posts an amount with an effective date…", ["today only", "before the arrangement's Transact start date, then ages it", "after maturity", "never"], 1, "The legacy position is loaded then aged by the same activity."),
+          q("Capture Historical Balance is available for which product line?", ["Lending only", "Accounts only", "Deposits only", "all three"], 1, "It's an Accounts-product-line feature."),
+          q("Write Off Bill sets an existing bill's amount to…", ["double", "zero", "the product default", "the customer limit"], 1, "Adjust nudges up/down; Write Off zeroes it."),
+          q("The 'other side' of a Balance Maintenance movement is handled by…", ["the customer", "allocation rules (usually suspense/wash)", "SWIFT", "nothing"], 1, "Net movement from bills can be zero."),
+        ],
+      },
+      {
+        id: "acbb2-4", title: "Statement Narratives",
+        description: "Turning activity codes into readable, multi-language statement text.",
+        concepts: ["cb2narrative", "cb2narrparam", "cb2narrformat", "cb2printstmt"],
+        quiz: [
+          q("Statement narratives are extracted from…", ["only AA.ACTIVITY", "AC.POSTING.DETAIL, AA.PROPERTY and AA.ACTIVITY", "the customer record", "SWIFT messages"], 1, "STMT-AA record maps activity → narrative."),
+          q("AA.STATEMENT.NARR.PARAM links…", ["customers to roles", "an activity (system ID + activity ID) to a narrative format", "balances to reports", "rates to tiers"], 1, "e.g. LENDING-NEW-ARRANGEMENT → its format."),
+          q("AA.STATEMENT.NARR.FORMAT holds…", ["the activity logic", "the narrative template text and per-token conversion rules", "the accounting rule", "the product design"], 1, "Conversion types format dates, amounts, names, etc."),
+          q("Transaction-specific narrative parameters…", ["are ignored", "take precedence over the application's main parameter", "only work at COB", "need SWIFT"], 1, "Specific beats general."),
+          q("PRINT.STATEMENT can be invoked…", ["only online", "during COB or online", "only by Temenos", "never"], 1, "Its record must be linked as a Statement Type."),
+        ],
+      },
+      {
+        id: "acbb2-5", title: "COB & Data Lifecycle",
+        description: "Tuning COB for AA, archiving and Data Lifecycle Management.",
+        concepts: ["cb2cob", "cb2decision", "cb2dlm", "cb2archive", "cb2nolog"],
+        quiz: [
+          q("At COB, unauthorised account-product activities can be…", ["always deleted", "skipped from delete-and-recreate to improve performance", "authorised automatically", "sent to SWIFT"], 1, "Configurable by product line, group, product, company, activity class or activity."),
+          q("AA.DECISION.PARAMETER's Default Decision…", ["ignores unauthorised activities", "deletes and recreates unauthorised activities during COB", "closes arrangements", "prints statements"], 1, "'Ignore' leaves them instead."),
+          q("Data Lifecycle Management moves aged data to…", ["SWIFT", "a non-volatile read-only database, still queryable", "the customer record", "the bin immediately"], 1, "Keeps the live system small; framework still reads aged data."),
+          q("In archiving, the Purge Date means the record is…", ["moved to read-only", "deleted", "kept forever", "reversed"], 1, "Retention Period = move to read-only; Purge Date = delete."),
+          q("A NOLOG activity…", ["is written to AA.ARRANGEMENT.ACTIVITY as normal", "is not logged, and gets an AAACN-prefixed ID", "can't be run", "is customer-facing"], 1, "NOLOG and Restrict Log are mutually exclusive."),
+        ],
+      },
+    ],
+    assessment: [
+      q("AA activities create ledger entries via…", ["direct posting", "accounting events processed by allocation rules", "the customer record", "SWIFT"], 1, "Activity → event → allocation rule → entries."),
+      q("Additional balance types are defined in…", ["AA.PRODUCT", "AC.BALANCE.TYPE", "EB.LOOKUP", "RELATION"], 1, "Virtual types sum real balances for calculation."),
+      q("The balance suffix SP marks a balance as…", ["current", "suspended", "aged", "accrued"], 1, "Non-accrual basis."),
+      q("The ACCOUNTING property class is…", ["optional", "mandatory, holding soft accounting rules", "arrangement-editable", "customer-facing"], 1, "ACCT.ACTION.CLASS + ACCTRULE."),
+      q("Non-customer-facing charges are…", ["shown to the customer", "booked internally and amortised to P&L", "waived", "the same as penalty interest"], 1, "e.g. FASB origination costs."),
+      q("AASUSPENSE decouples…", ["customers from products", "money arriving from the arrangement processing it", "COB from online", "print from display"], 1, "Improves performance and reconciliation."),
+      q("BALANCE.MAINTENANCE is used mainly for…", ["daily accrual", "migrating arrangements into AA", "statement printing", "eligibility"], 1, "Capture and adjust balances/bills on takeover."),
+      q("HIS-<ACCOUNT> balances exist so that…", ["statements print faster", "back-dated changes beyond the takeover date can be replayed", "interest is waived", "COB is skipped"], 1, "They hold the migrated account's past positions."),
+      q("AA.STATEMENT.NARR.PARAM is keyed on…", ["customer ID", "system ID + activity ID", "balance type", "currency"], 1, "e.g. LENDING-NEW-ARRANGEMENT."),
+      q("PRINT.STATEMENT integrates the wording from…", ["RELATION", "AA.NARRATIVE", "DFE.MAPPING", "CUSTOMER"], 1, "Its record links as a Statement Type."),
+      q("AA.DECISION.PARAMETER set to 'Ignore' means COB…", ["deletes unauthorised activities", "leaves unauthorised activities in place", "authorises them", "archives them"], 1, "Default Decision would delete and recreate."),
+      q("A NOLOG activity's AA ID is prefixed…", ["AAACT", "AAACN", "AA", "HIS"], 1, "AAACN = 'not logged'; NOLOG and Restrict Log are mutually exclusive."),
+    ],
+  },
+  {
+    id: "alpb1",
+    code: "TR3PRLPB1",
+    title: "AA Lending Product Building — Part 1",
+    description: "Building a lending product property class by property class: Term Amount, Account, Limit, Interest, Tax, Charges, Payment Schedule and Settlement.",
+    sections: [
+      {
+        id: "alpb1-1", title: "Term Amount",
+        description: "The commitment amount, term, maturity, revolving behaviour and tranche disbursement.",
+        concepts: ["lpb1termamt", "lpb1commit", "lpb1maturity", "lpb1revolving", "lpb1tranche"],
+        quiz: [
+          q("TERM.AMOUNT carries…", ["only the interest rate", "the commitment amount and the term", "the customer roles", "the accounting rules"], 1, "How much, for how long — a mandatory Lending property class."),
+          q("A Change Amount activity…", ["closes the loan", "increases or decreases the commitment during the arrangement", "changes the currency", "recalculates tax"], 1, "Top-ups and partial cancellations without a new arrangement."),
+          q("Revolving = Payment means…", ["repayments never restore availability", "any principal repayment restores the available amount", "only prepayment restores it", "the loan can't be drawn"], 1, "Prepayment restores only on early repayment; None never restores."),
+          q("A tranche is…", ["a type of interest", "a slice of the commitment with its own start date and amount", "a customer role", "a balance type"], 1, "A Tranche Bill is created on each tranche's start date."),
+          q("If maturity lands on a holiday and the Mat Date Convention is Yes…", ["nothing happens", "the maturity date is adjusted", "the loan is cancelled", "term doubles"], 1, "Beyond TERM.TOL.DAYS the term is recalculated."),
+        ],
+      },
+      {
+        id: "alpb1-2", title: "Account",
+        description: "The arrangement's own account: dormancy, base dates and posting restrictions.",
+        concepts: ["lpb1account", "lpb1dormancy", "lpb1basedate", "lpb1posting"],
+        quiz: [
+          q("The ACCOUNT property class is…", ["optional", "mandatory and holds the principal balance", "customer-facing only", "Temenos-only"], 1, "AA is account-based; opening an arrangement creates its account."),
+          q("Dormancy is measured in…", ["days since disbursement", "inactive months", "missed payments", "overdue bills"], 1, "After N inactive months the account is dormant."),
+          q("Base vs Previous base date type decides…", ["the currency", "whether cycling uses the un-adjusted base date or the last actual cycle date", "the interest rate", "the tax split"], 1, "Base = fixed anchor; Previous = follow the last real date."),
+          q("A Posting Restriction…", ["closes the account", "blocks debits and/or credits for a date range with a reason", "waives charges", "changes the officer"], 1, "Blocking codes via BLOCK.REASON.CODES / UNBLOCK.REASON.CODES."),
+          q("Allowed balance prefixes for the Lending ACCOUNT property include…", ["only CUR", "CUR, DUE, AGE, AVL, UNC, UND", "SP only", "none"], 1, "Suffix *INP/*CO/*CLIST/*CLST."),
+        ],
+      },
+      {
+        id: "alpb1-3", title: "Limit",
+        description: "Linking an arrangement to a credit limit, single vs shared, and netting.",
+        concepts: ["lpb1limit", "lpb1limitref", "lpb1netting"],
+        quiz: [
+          q("The LIMIT property class is…", ["mandatory", "optional, linking the arrangement to a LIMIT-module limit", "the interest engine", "the schedule"], 1, "Banks approve credit at customer/group level; loans draw it down."),
+          q("Single Limit = Yes means the limit is…", ["shared by all the customer's arrangements", "locked to this one arrangement", "unlimited", "not tracked"], 1, "No lets other arrangements of the same customer share it."),
+          q("Netting lets…", ["two customers merge", "a credit balance offset another arrangement's overdraft on the same Limit", "charges be waived", "COB be skipped"], 1, "Applicable only for shared limits."),
+          q("The Limit Reference must relate to…", ["any customer", "the Primary Owner", "the guarantor", "the branch"], 1, "It's the limit record ID in the arrangement."),
+          q("If DISBURSE runs without a limit attached…", ["it fails", "an override is generated", "the loan closes", "interest stops"], 1, "Limit is typically Arrangement Level and Non-Tracking."),
+        ],
+      },
+      {
+        id: "alpb1-4", title: "Interest",
+        description: "Interest types, RFR, tiered rates and rate adjustment.",
+        concepts: ["lpb1interest", "lpb1inttypes", "lpb1rfr", "lpb1tiered", "lpb1rateadj", "lpb1linked"],
+        quiz: [
+          q("A product can carry…", ["one interest property only", "several INTEREST properties, each with its own rate and balance", "no interest", "interest only via tax"], 1, "e.g. PRINCIPALINT and PENALTYINT."),
+          q("A Floating interest rate is…", ["typed by the user", "read from BASIC.INTEREST plus a spread", "always zero", "read from the customer record"], 1, "Periodic reads PERIODIC.INTEREST for a defined period."),
+          q("Banded tiered interest applies each rate to…", ["the whole balance", "only the portion within that tier", "the first tier only", "nothing"], 1, "Level applies the reached tier's rate to the whole balance."),
+          q("RFR rates are…", ["a single published rate", "compounded overnight rates with look-back and day-count conventions", "always fixed", "customer-set"], 1, "SOFR/SONIA replacing LIBOR; RFR Look Back Days 1–10."),
+          q("RATE.ADJUSTMENT is set at…", ["the product condition", "the arrangement level", "COB", "the customer record"], 1, "So one customer's rate is bent without a product change."),
+          q("A Linked Rate derives an arrangement's rate from…", ["the branch", "another arrangement's Interest property", "the tax code", "the schedule"], 1, "Used when a deposit is collateral for a loan/overdraft."),
+        ],
+      },
+      {
+        id: "alpb1-5", title: "Tax",
+        description: "Withholding tax on interest and charges, tax splits and proportional tax.",
+        concepts: ["lpb1tax", "lpb1taxsplit"],
+        quiz: [
+          q("The TAX property class calculates tax on…", ["the commitment amount", "the interest and charges of a named property", "the customer's salary", "the schedule"], 1, "Multiple TAX properties allowed; Currency and Dated."),
+          q("Tax splits between related customers use…", ["the branch code", "CUSTOMER.RELATIONSHIP / AA.CUSTOMER.ROLE with a percentage", "the tax code alone", "COB"], 1, "ST.CUST.RELATIONSHIP.DATES holds the split dates."),
+          q("Proportional tax calculation is switched on in…", ["AA.PRODUCT.DESIGNER", "TAX.CODE.PARAMETER per tax code", "RELATION", "the customer record"], 1, "ST.TAX.CALC.DETAILS holds the breakup."),
+          q("Tax can optionally be…", ["ignored entirely", "included in the payment schedule", "paid by Temenos", "negative"], 1, "For loan annuity payment calculations."),
+          q("The Property Tax Code uses…", ["TAX.CODE only", "PROP.TAX.CODE or PROP.TAX.COND", "the mnemonic", "DEPT.ACCT.OFFICER"], 1, "Tax Code uses TAX.CODE or TAX.CONDITION."),
+        ],
+      },
+      {
+        id: "alpb1-6", title: "Charges",
+        description: "Activity charges, the general CHARGE class, overrides, periodic charges and how charges trigger.",
+        concepts: ["lpb1activitycharge", "lpb1charge", "lpb1chargeoverride", "lpb1periodiccharge", "lpb1triggercharge"],
+        quiz: [
+          q("ACTIVITY.CHARGES levies a charge when…", ["a bill is due", "a specific AA activity is triggered", "COB runs", "the customer logs in"], 1, "The Activity ID must be a valid AA.ACTIVITY record."),
+          q("The CHARGE property class calculation types are…", ["only Fixed", "Flat, Percentage, Unit", "Level and Banded only", "none"], 1, "On specified balances, with tiers Level/Banded/Groups."),
+          q("CHARGE.OVERRIDE is used to…", ["add a fee", "waive or modify charges when an activity triggers or a rule breaks", "change the rate", "close the loan"], 1, "The waive reason is stored; it's DATED and non-tracking."),
+          q("PERIODIC.CHARGES are…", ["event-based fees", "charges that fall due at regular intervals", "tax", "interest"], 1, "e.g. a monthly maintenance fee."),
+          q("The three charge trigger types are…", ["Fixed, Percentage, Unit", "event-based, rule-based, schedule-based", "Due, Cap, Defer", "Level, Banded, Group"], 1, "APP.METHOD (Due/Cap/Defer/Pay) then sets the application method."),
+        ],
+      },
+      {
+        id: "alpb1-7", title: "Payment Schedule",
+        description: "The repayment plan: payment types, frequency, recalculation and payment holidays.",
+        concepts: ["lpb1payschedule", "lpb1paytypes", "lpb1payfreq", "lpb1recalc", "lpb1holidays"],
+        quiz: [
+          q("PAYMENT.SCHEDULE is…", ["optional", "a mandatory Lending property class defining the repayment rules", "the interest engine", "a tax table"], 1, "Dated, forward-dated and currency-specific; schedule enquiry is runtime Nofile."),
+          q("CONSTANT payment type keeps level the…", ["principal portion", "total instalment", "interest portion", "charges"], 1, "LINEAR keeps the principal portion level; ACTUAL pays what's calculated."),
+          q("Bills are generated…", ["on the due date", "a number of working days in advance of the due date", "only at maturity", "never automatically"], 1, "So notices and direct debits can run ahead."),
+          q("Recalculation type Term means a rate change…", ["raises the instalment", "extends (or shortens) the loan term", "is ignored", "creates a balloon"], 1, "Type Payment moves the instalment instead."),
+          q("A payment holiday is set up via activity…", ["LENDING-DISBURSE-COMMITMENT", "LENDING-UPDATE-PAYMENT.HOLIDAY", "LENDING-APPLYPAYMENT", "COB"], 1, "Repayment Holiday Limit caps the holiday."),
+        ],
+      },
+      {
+        id: "alpb1-8", title: "Settlement",
+        description: "Moving money in and out: pay-in/pay-out, receiving funds, direct debits and offsetting bills.",
+        concepts: ["lpb1settlement", "lpb1receiving", "lpb1directdebit", "lpb1offset"],
+        quiz: [
+          q("The SETTLEMENT property class defines…", ["the interest rate", "how money is received (Pay In) and paid out (Pay Out)", "the customer roles", "the tax split"], 1, "Mandates defined in the Direct Debit module."),
+          q("Receiving Funds = Partial means an underpayment…", ["is rejected", "settles bills to the extent of the funds available", "is capitalised", "closes the loan"], 1, "Full = all or nothing; None = don't settle."),
+          q("The Transaction Recycler / Cycler…", ["prints statements", "retries movements/collections that couldn't complete", "calculates tax", "archives data"], 1, "Bills are prioritised (oldest first or as configured)."),
+          q("Offsetting bills nets…", ["two customers", "a Pay bill against a Due bill so only the net moves", "interest against principal automatically", "COB against online"], 1, "From an accounting view the net is settled — no separate P&L impact."),
+          q("The default settlement account comes from…", ["the branch", "DEFAULT.SETTLEMENT.ACCOUNT", "the mnemonic", "the tax code"], 1, "Default activity from Activity Mapping (R17)."),
+        ],
+      },
+    ],
+    assessment: [
+      q("TERM.AMOUNT is…", ["optional", "mandatory, carrying commitment amount and term", "the tax engine", "the schedule"], 1, "How much, for how long."),
+      q("Revolving = Payment means repayments…", ["never restore availability", "restore the available commitment", "only restore on prepayment", "block drawing"], 1, "None never restores; Prepayment only on early repayment."),
+      q("The ACCOUNT property class holds…", ["the customer roles", "the principal balance and account-level settings", "the accounting rules", "the officers"], 1, "AA is account-based."),
+      q("Single Limit = No means the limit is…", ["locked to one arrangement", "shared by the customer's arrangements", "unlimited", "not tracked"], 1, "Yes ring-fences it to one arrangement."),
+      q("Netting requires…", ["a single limit", "a shared limit", "no limit", "two customers"], 1, "Credit balance offsets another arrangement's overdraft on the same Limit."),
+      q("Periodic interest is read from…", ["BASIC.INTEREST", "PERIODIC.INTEREST for a defined period", "the customer record", "the tax table"], 1, "Floating reads BASIC.INTEREST + spread."),
+      q("Banded tiered interest charges each rate on…", ["the whole balance", "only its slice of the balance", "the top tier", "nothing"], 1, "Level charges the reached tier's rate on everything."),
+      q("RATE.ADJUSTMENT is applied at…", ["the product condition", "the arrangement level", "the product line", "COB"], 1, "To bend one arrangement's rate."),
+      q("Tax splits between owners use…", ["the branch", "CUSTOMER.RELATIONSHIP with percentages", "the officer", "COB"], 1, "ST.CUST.RELATIONSHIP.DATES holds split dates."),
+      q("CHARGE.OVERRIDE is used to…", ["add fees", "waive or modify charges on an activity/broken rule", "change rates", "close loans"], 1, "The waive reason is stored."),
+      q("CONSTANT payment type keeps level the…", ["principal", "total instalment", "interest", "charges"], 1, "LINEAR keeps principal level."),
+      q("Recalculation type Payment means a rate change…", ["extends the term", "raises the instalment", "is ignored", "creates a balloon"], 1, "Type Term extends the loan instead."),
+      q("A payment holiday uses activity…", ["LENDING-DISBURSE-COMMITMENT", "LENDING-UPDATE-PAYMENT.HOLIDAY", "COB", "MAKEDUE"], 1, "Capped by the Repayment Holiday Limit."),
+      q("The SETTLEMENT property class defines…", ["interest", "pay-in and pay-out instructions via DD mandates", "the schedule", "tax"], 1, "Default via DEFAULT.SETTLEMENT.ACCOUNT."),
+      q("Offsetting bills means the customer moves…", ["the gross of both bills", "only the net of Pay against Due", "nothing", "double"], 1, "Offset Property Class/Property indicates the balance to offset."),
+    ],
+  },
 ];
 const allConceptIds = COURSES.flatMap(c => c.sections.flatMap(s => s.concepts));
 const conceptCourse = {};
@@ -1750,6 +3345,16 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
         ))}
       </div>
 
+      {slideImgSrc(conceptId) && (
+        <figure className="mt-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={slideImgSrc(conceptId)} alt={`${c.title} — screenshot from the course slides`}
+            loading="lazy"
+            className="w-full rounded-xl border border-slate-200 bg-white" />
+          <figcaption className="mt-1.5 text-xs text-slate-400">Screenshot from the course slides</figcaption>
+        </figure>
+      )}
+
       {mode === "steps" && (
         <ol className="mt-6 space-y-3">
           {STEP_META.map((s, i) => {
@@ -1808,6 +3413,13 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           <GitBranch size={15} /> View diagram: {DIAGRAMS[c.diagram].title} <ChevronRight size={14} />
         </button>
       )}
+
+      {LABS.filter(l => l.related?.includes(conceptId)).map(l => (
+        <button key={l.id} onClick={() => onOpen({ view: "lab", labId: l.id })}
+          className="mt-4 flex w-full items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900">
+          <Wrench size={15} /> Practice in sandbox: {l.title} <ChevronRight size={14} />
+        </button>
+      ))}
 
       {c.related?.length > 0 && (
         <div className="mt-6">
@@ -2026,6 +3638,94 @@ function DiagramFlow({ id }) {
   );
 }
 
+// ---- Sandbox drills ------------------------------------------------------
+function LabsList({ go }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Sandbox drills</h1>
+      <p className="mt-1 text-sm text-slate-500">Step-by-step things to try in a Temenos training sandbox. Verify exact menu names in your own environment.</p>
+      {COURSES.filter(c => LABS.some(l => l.courseId === c.id)).map(c => (
+        <div key={c.id} className="mt-6">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">{c.title}</div>
+          <div className="grid grid-cols-2 gap-3">
+            {LABS.filter(l => l.courseId === c.id).map(l => (
+              <button key={l.id} onClick={() => go({ view: "lab", labId: l.id })}
+                className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-teal-300 transition-colors">
+                <Wrench size={18} className="text-teal-600" />
+                <div className="mt-2 font-medium text-slate-900">{l.title}</div>
+                <div className="text-sm text-slate-500 line-clamp-2">{l.goal}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LabView({ id, onOpen }) {
+  const l = LABS.find(x => x.id === id);
+  if (!l) return null;
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{l.title}</h1>
+      <p className="mt-2 text-slate-700 leading-relaxed">{l.goal}</p>
+
+      <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm">
+        <div><span className="text-slate-400 uppercase text-xs tracking-wide mr-2">Application</span>{withMono(l.app)}</div>
+        <div><span className="text-slate-400 uppercase text-xs tracking-wide mr-2">Where</span>{withMono(l.menu)}</div>
+        {l.prereq && <div><span className="text-slate-400 uppercase text-xs tracking-wide mr-2">Prereq</span>{withMono(l.prereq)}</div>}
+      </div>
+
+      <ol className="mt-6 space-y-3">
+        {l.steps.map((s, i) => (
+          <li key={i} className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 text-sm font-semibold ring-1 ring-teal-100">{i + 1}</div>
+              {i < l.steps.length - 1 && <div className="w-px flex-1 bg-slate-200 my-1" />}
+            </div>
+            <div className="pb-1">
+              <p className="text-sm leading-relaxed text-slate-800">{withMono(s.do)}</p>
+              {s.expect && (
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                  <span className="text-xs uppercase tracking-wide text-slate-400 mr-1.5">Expect</span>{withMono(s.expect)}
+                </p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      {l.verify && (
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-600 mb-1.5"><Check size={13} /> Done when</div>
+          <p className="text-sm leading-relaxed text-emerald-900">{withMono(l.verify)}</p>
+        </div>
+      )}
+      {l.note && (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5"><Lightbulb size={13} /> Note</div>
+          <p className="text-sm leading-relaxed text-slate-700">{withMono(l.note)}</p>
+        </div>
+      )}
+
+      {l.related?.filter(r => CONCEPTS[r]).length > 0 && (
+        <div className="mt-6">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">Concepts this covers</div>
+          <div className="flex flex-wrap gap-2">
+            {l.related.filter(r => CONCEPTS[r]).map(r => (
+              <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-teal-300 hover:text-teal-800 transition-colors">
+                {CONCEPTS[r].title} <ArrowRight size={12} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================================================
 export default function App() {
   const [progress, setProgress] = usePersistentState("temenos-progress-v1", {
@@ -2065,6 +3765,7 @@ export default function App() {
     { id: "courses", label: "Courses", icon: BookOpen },
     { id: "flashcards", label: "Flashcards", icon: BookMarked },
     { id: "diagrams", label: "Diagrams", icon: GitBranch },
+    { id: "labs", label: "Sandbox", icon: Wrench },
     { id: "progress", label: "Progress", icon: BarChart3 },
   ];
 
@@ -2090,7 +3791,8 @@ export default function App() {
               const Icon = n.icon;
               const active = nav.view === n.id
                 || (n.id === "courses" && ["course", "section", "concept", "quiz", "assessment"].includes(nav.view))
-                || (n.id === "diagrams" && nav.view === "diagram");
+                || (n.id === "diagrams" && nav.view === "diagram")
+                || (n.id === "labs" && nav.view === "lab");
               return (
                 <button key={n.id} onClick={() => go({ view: n.id })}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-teal-50 text-teal-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
@@ -2174,6 +3876,13 @@ export default function App() {
             <div>
               <button onClick={() => go({ view: "diagrams" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> Diagrams</button>
               <DiagramFlow id={nav.diagramId} />
+            </div>
+          )}
+          {nav.view === "labs" && <LabsList go={go} />}
+          {nav.view === "lab" && (
+            <div>
+              <button onClick={() => go({ view: "labs" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> Sandbox drills</button>
+              <LabView id={nav.labId} onOpen={go} />
             </div>
           )}
           {nav.view === "progress" && (
