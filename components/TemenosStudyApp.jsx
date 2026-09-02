@@ -3604,6 +3604,30 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           {isRead ? <><CheckCircle2 size={16} /> Marked as read</> : <><Check size={16} /> Mark as read</>}
         </button>
       </div>
+
+      {(() => {
+        const idx = allConceptIds.indexOf(conceptId);
+        const prev = idx > 0 ? allConceptIds[idx - 1] : null;
+        const next = idx >= 0 && idx < allConceptIds.length - 1 ? allConceptIds[idx + 1] : null;
+        return (
+          <div className="mt-6 flex items-stretch gap-3 border-t border-slate-200 pt-4">
+            {prev ? (
+              <button onClick={() => onOpen({ view: "concept", conceptId: prev })}
+                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-teal-300 transition-colors">
+                <div className="flex items-center gap-1 text-xs text-slate-400"><ArrowLeft size={12} /> Previous</div>
+                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-teal-800 line-clamp-1">{CONCEPTS[prev].title}</div>
+              </button>
+            ) : <div className="flex-1" />}
+            {next ? (
+              <button onClick={() => onOpen({ view: "concept", conceptId: next })}
+                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-teal-300 transition-colors">
+                <div className="flex items-center justify-end gap-1 text-xs text-slate-400">Next <ArrowRight size={12} /></div>
+                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-teal-800 line-clamp-1">{CONCEPTS[next].title}</div>
+              </button>
+            ) : <div className="flex-1" />}
+          </div>
+        );
+      })()}
     </div>
   );
 }
