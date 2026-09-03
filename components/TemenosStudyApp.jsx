@@ -3778,11 +3778,23 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
     { id: "simply", label: "Explain simply" },
   ];
   const speakText = () => {
-    const parts = [c.title];
-    if (mode === "deep") parts.push(c.how, c.example, c.why, c.temenos, c.memory);
-    else if (mode === "simply") parts.push(c.simple, c.example);
-    else parts.push(c.simple, c.example, c.why, c.memory);
-    return parts.filter(Boolean).join(". ");
+    const s = [`${c.title}.`];
+    if (mode === "deep") {
+      if (c.how) s.push(`How it works. ${c.how}`);
+      if (c.example) s.push(`For example. ${c.example}`);
+      if (c.why) s.push(`Why banks use it. ${c.why}`);
+      if (c.temenos) s.push(`In Temenos. ${c.temenos}`);
+      if (c.memory) s.push(`Memory trick. ${c.memory}`);
+    } else if (mode === "simply") {
+      if (c.simple) s.push(c.simple);
+      if (c.example) s.push(`If you saw it in a real bank. ${c.example}`);
+    } else {
+      if (c.simple) s.push(c.simple);
+      if (c.example) s.push(`For example. ${c.example}`);
+      if (c.why) s.push(`This matters because. ${c.why}`);
+      if (c.memory) s.push(`To remember it. ${c.memory}`);
+    }
+    return s.join(" ");
   };
 
   return (
@@ -4094,10 +4106,25 @@ function Flashcards({ pool, flash, setFlash, title }) {
 function DiagramFlow({ id }) {
   const d = DIAGRAMS[id];
   if (!d) return null;
+  const narrate = () => {
+    const s = [`${d.title}.`, `${d.caption}`, `This flow has ${d.steps.length} stages.`];
+    d.steps.forEach((st, i) => {
+      const lead = i === 0 ? "First" : i === d.steps.length - 1 ? "Finally" : "Then";
+      let line = `${lead}, ${st.label}`;
+      if (st.sub) line += ` — ${st.sub}`;
+      line += ".";
+      if (st.tag) line += ` In Temenos this is ${st.tag.replace(/\./g, " dot ")}.`;
+      s.push(line);
+    });
+    return s.join(" ");
+  };
   return (
     <div className="max-w-2xl">
       <h2 className="text-xl font-semibold text-slate-900">{d.title}</h2>
       <p className="mt-1 text-sm text-slate-500">{d.caption}</p>
+      <div className="mt-3">
+        <SpeakButton getText={narrate} resetKey={id} label="Walk me through it" />
+      </div>
       <div className="mt-6 space-y-0">
         {d.steps.map((s, i) => (
           <div key={i}>
