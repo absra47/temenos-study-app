@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Home, BookOpen, Layers, GitBranch, BarChart3, Search, ChevronRight,
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
-  GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench
+  GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
+  Volume2, Square, Pause, Play
 } from "lucide-react";
 
 /* ============================================================================
@@ -2637,6 +2638,11 @@ const COURSES = [
           q("What controls which applications a user can navigate to?", ["The All-in-One page", "The User Security Profile (USSP)", "The mnemonic", "The RELATION table"], 1, "The USSP is the access layer; edit it with care because it restricts real users."),
           q("The Work List of pending items (e.g. unauthorised records) is based on which enquiry?", ["RELATION", "EXCEPTION", "DIVIDEND", "AGENCY"], 1, "The Work List is driven by the EXCEPTION enquiry."),
           q("A user needs one customer's accounts, statements and relationships in one place. Where do they go?", ["EXCEPTION enquiry", "Single Customer View (SCV)", "System Parameters", "Head Teller"], 1, "The SCV is the 360° customer screen."),
+          q("Role pages relate to the All-in-One page how?", ["Role pages add extra applications on top", "Role pages are trimmed-down versions of the All-in-One page", "They are unrelated", "The All-in-One page is per customer"], 1, "Every role page is a cut-down view of the All-in-One page."),
+          q("Who defines the content of a Role-Based Home Page?", ["Each user, from scratch", "Temenos, predefined per role", "The customer", "The COB batch"], 1, "RBHPs ship predefined by Temenos for each role."),
+          q("The Single Group View (SGV) shows…", ["One customer's 360° view", "A lending group's members, meetings, limits and transfers", "Pending authorisations", "The COB schedule"], 1, "The SGV is the group equivalent of the SCV."),
+          q("Editing the User Security Profile (USSP) is risky because…", ["It changes interest rates", "It restricts what real users can access", "It deletes customers", "It reruns COB"], 1, "The USSP is a live access-control layer for real users."),
+          q("The Work List lets a user…", ["Only view pending items", "Click through and action pending items such as unauthorised records", "Change their own role", "Post dividends"], 1, "Items in the Work List are actionable, not just visible."),
         ],
       },
       {
@@ -2650,6 +2656,11 @@ const COURSES = [
           q("The mnemonic is stored in…", ["CUSTOMER only", "MNEMONIC.CUSTOMER", "RELATION", "COMPANY"], 1, "The mnemonic→ID link lives in MNEMONIC.CUSTOMER."),
           q("A customer is flagged as a BANK using…", ["a mnemonic", "Sector 8001 in ACCOUNT.CLASS", "the RELATION table", "DVND.CALC"], 1, "Sector 8001 in ACCOUNT.CLASS marks a customer as a bank, affecting payment processing."),
           q("The Customer ID length is…", ["exactly 6 digits", "7–10 digits, can be auto-generated", "always 12 digits", "alphabetic"], 1, "The numeric ID is 7–10 digits and can be auto-generated."),
+          q("The customer record is best described as…", ["Account-centric", "Customer-centric — one record supporting many products", "Transaction-centric", "Branch-centric"], 1, "Financial Inclusion is built around a single customer-centric record."),
+          q("A prospect is…", ["An authorised customer", "A potential customer captured before full onboarding", "A blocked customer", "A bank (Sector 8001) customer"], 1, "Prospects are captured early and converted to full customers later."),
+          q("A non-individual (company) customer differs by capturing…", ["No mnemonic", "Incorporation / registration details instead of personal ones", "No address", "No account officer"], 1, "Non-individual customers record registration data rather than personal data."),
+          q("The Sector field on the customer…", ["Sets the mnemonic", "Drives downstream processing and classification", "Is optional and unused", "Is the account officer"], 1, "Sector feeds reporting and downstream processing rules."),
+          q("A customer flagged as a BANK (Sector 8001) affects…", ["Login speed", "Payment processing behaviour", "The mnemonic format", "Dividend points"], 1, "Bank customers are treated differently in payment processing."),
         ],
       },
       {
@@ -2662,6 +2673,10 @@ const COURSES = [
           q("Uploaded file records first land in which status?", ["Authorised", "INAU (input, unauthorised)", "Current", "Reversed"], 1, "They await authorisation in INAU."),
           q("Which service auto-starts on authorising a bulk account-officer change?", ["TM.PROCESS", "SG.BA.CHANGE.DAO", "EVENT", "BNK/EM.DFE.FILE.PROCESS"], 1, "SG.BA.CHANGE.DAO runs the portfolio transfer and starts automatically on authorisation."),
           q("For full task functionality, which must run in AUTO?", ["only DFE", "TM.PROCESS and EVENT", "only SG.BA.CHANGE.DAO", "none"], 1, "TM.PROCESS and the EVENT service must run in AUTO."),
+          q("Task Management brings work to the user by…", ["Emailing them", "Creating tasks with actions in their work list", "Printing reports", "Running COB"], 1, "Tasks land in the user's list with Execute / Reassign / View actions."),
+          q("DFE stands for…", ["Data Formatting Engine", "Delivery File Export", "Dividend Formula Engine", "Direct Feed Entry"], 0, "The Data Formatting Engine underpins File Upload."),
+          q("To delegate a task to another user you…", ["Execute it", "Reassign it", "View it", "Delete it"], 1, "Reassign hands the task to another user."),
+          q("SG.BA.CHANGE.DAO…", ["Changes the dividend rate", "Reassigns customer portfolios to a new account officer", "Authorises customers in bulk", "Maps file columns"], 1, "It performs the portfolio transfer on authorisation."),
         ],
       },
       {
@@ -2674,6 +2689,10 @@ const COURSES = [
           q("A Credit Block on a member updates which customer field?", ["DVND.CALC", "BLOCKED", "MULTI.GROUPS", "MNEMONIC"], 1, "Credit Block sets the BLOCKED field on the customer."),
           q("How many groups can a single group link to as a centre?", ["unlimited", "only one", "up to three", "none"], 1, "A group can link to only one centre."),
           q("Group lending typically needs…", ["1–2 members", "5+ members with ~3 months saving discipline", "50 members minimum", "no members"], 1, "Five or more members, saving discipline ~3 months, mutual guarantee."),
+          q("The Group Type controls…", ["Only the group name", "Limits, product eligibility and meeting rules", "The account officer", "The dividend rate"], 1, "Group Type is the parameter that shapes the group's behaviour."),
+          q("A member of a lending group must…", ["Be a prospect", "Already exist as an authorised customer", "Belong to no other group", "Be a company"], 1, "Members are added by customer ID and must be authorised customers first."),
+          q("Mutual guarantee means…", ["The bank guarantees each member", "Members guarantee each other's repayment", "A government grant covers default", "No guarantee is needed"], 1, "Peer guarantee replaces traditional collateral."),
+          q("The Single Group View does NOT show…", ["Members", "Meeting details", "Available limit", "An individual customer's full statement history"], 3, "The SGV is group-level; individual statements live in the SCV."),
         ],
       },
       {
@@ -2685,6 +2704,10 @@ const COURSES = [
           q("Setting DVND.CALC = No on an account means…", ["tax is applied", "dividends are not calculated", "the account is closed", "points double"], 1, "DVND.CALC=No excludes the account from dividend calculation."),
           q("Dividend points use which method?", ["closing balance", "average daily balance (above a minimum)", "opening balance", "highest balance"], 1, "Points accrue from the average daily balance, subject to a minimum."),
           q("Which application runs the simulation and posting?", ["Dividend Runner", "Task Manager", "DFE", "Find Loan"], 0, "The Dividend Runner simulates, then Posts; outcomes are in EM.DIVIDEND.RUN.DETAILS."),
+          q("Simulation mode in the Dividend Runner…", ["Posts dividends immediately", "Calculates results without posting them", "Closes the accounts", "Is not available"], 1, "Simulation lets you review figures before running Post."),
+          q("Dividend points accrue on balance…", ["Below the minimum", "Above the configured minimum balance", "At month end only", "On the loan account"], 1, "Only the average daily balance above the minimum earns points."),
+          q("On Post, each member receives…", ["A new account", "A note / advice of the dividend", "A loan", "Nothing"], 1, "Posting issues an advice to each member."),
+          q("'Days in Year' in the formula is…", ["The account's age", "The day-basis divisor for the period", "The number of members", "The COB count"], 1, "It is the day-count divisor applied to the points."),
         ],
       },
       {
@@ -2697,6 +2720,10 @@ const COURSES = [
           q("Obligation amount types include…", ["Fixed only", "User Defined / Track Loan Repayment / Track Loan Arrears", "Percentage only", "None"], 1, "Amount can be user-defined or track loan repayment/arrears."),
           q("Obligation actions are processed…", ["instantly online", "during COB on the next run date", "only at year-end", "never automatically"], 1, "Actions run at COB based on the obligation's next run date; the EVENT service must be AUTO."),
           q("A payment split to an inactive obligation is…", ["forced through", "skipped", "queued forever", "converted to a source"], 1, "Splits to inactive obligations are skipped."),
+          q("A Payment Source represents…", ["What the money is for", "The incoming money that triggers a split", "The split percentages", "The COB date"], 1, "The source is the qualifying inbound credit."),
+          q("A Payment Obligation represents…", ["Incoming money", "What the money is for, e.g. a loan repayment", "The customer's address", "A relationship"], 1, "The obligation is the target the money is applied to."),
+          q("'Track Loan Repayment' as an amount type means…", ["A fixed amount each run", "The obligation amount follows the loan's due repayment", "Interest only", "The full loan balance"], 1, "The obligation amount is derived from the loan's repayment due."),
+          q("For payment-split processing to run, which service must be AUTO?", ["TM.PROCESS only", "EVENT (Business Events)", "SG.BA.CHANGE.DAO", "None"], 1, "The EVENT service drives obligation actions at COB."),
         ],
       },
     ],
@@ -2713,6 +2740,13 @@ const COURSES = [
       q("Dividend = …", ["Points × members", "(Points ÷ Days in Year) × Rate", "flat per member", "% of the loan"], 1, "Average-daily-balance points drive the formula."),
       q("Payment obligations are set up from…", ["the Teller page", "the SCV", "System Admin", "the EXCEPTION enquiry"], 1, "From the Single Customer View."),
       q("The EVENT service (Business Events) must run in AUTO to…", ["post dividends", "qualify payment sources and run split processing", "authorise customers", "generate mnemonics"], 1, "Business Events qualifies sources; actions then run at COB."),
+      q("Every role page is…", ["built by the user", "a trimmed-down version of the All-in-One page", "stored in RELATION", "generated at COB"], 1, "Role pages are cut-down views of the All-in-One page."),
+      q("The 360° view of a lending group is the…", ["SCV", "SGV (Single Group View)", "Work List", "All-in-One page"], 1, "SGV shows members, meetings, limits and transfers."),
+      q("A prospect is…", ["an authorised customer", "a potential customer captured before onboarding", "a blocked customer", "a bank customer"], 1, "Prospects convert to full customers later."),
+      q("The Account Officer (DAO) defaults onto transactions to enable…", ["faster login", "MIS / reporting by officer", "interest calculation", "mnemonic generation"], 1, "It drives management information at officer level."),
+      q("Group members must…", ["be prospects", "already be authorised customers", "belong to no other group", "be non-individuals"], 1, "Members are added by customer ID."),
+      q("Dividend simulation mode…", ["posts immediately", "calculates without posting", "closes accounts", "is unavailable"], 1, "Review figures before Post."),
+      q("The payment-management chain is…", ["Split → Source → Obligation", "Source → Obligation → Split", "Obligation → Source → Split", "Source → Split → Obligation"], 1, "Money in (source) → what it's for (obligation) → how it's divided (split)."),
     ],
   },
   {
@@ -3475,6 +3509,257 @@ function Ring({ pct, size = 64 }) {
   );
 }
 
+// ---- voice reader (Web Speech API) ---------------------------------------
+// Reads the current page aloud. `getText` returns the text to speak; `resetKey`
+// changes whenever the page content changes, so playback stops on navigation.
+
+// Rank installed voices so the most natural-sounding one is picked by default.
+// macOS/iOS "premium"/"enhanced" and Google/Microsoft Natural voices sound far
+// less robotic than the default compact ones.
+const VOICE_PREF = [
+  /natural/i, /premium/i, /enhanced/i,
+  /google (uk|us) english/i, /\bgoogle\b/i,
+  /microsoft .*(natural|online)/i,
+  /ava|samantha|serena|jenny|aria|libby|sonia|zira/i,
+  /daniel|arthur|oliver|guy|ryan/i,
+];
+function rankVoice(v) {
+  const name = `${v.name} ${v.voiceURI}`;
+  let score = 0;
+  VOICE_PREF.forEach((re, i) => { if (re.test(name)) score += (VOICE_PREF.length - i) * 10; });
+  if (/^en(-|_)?(GB|US|AU|IE)?/i.test(v.lang)) score += 5;
+  if (/compact|eloquence|fred|albert|zarvox|trinoids|whisper/i.test(name)) score -= 50;
+  return score;
+}
+
+function useVoices() {
+  const [voices, setVoices] = useState([]);
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const load = () => {
+      const en = window.speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+      setVoices(en.sort((a, b) => rankVoice(b) - rankVoice(a)));
+    };
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+  return voices;
+}
+
+// Natural cloud voices via Puter.js (https://docs.puter.com/AI/txt2speech/).
+// No API key: Puter bills the end user, with a free tier. Needs a network
+// connection; the reader falls back to the device voice when unavailable.
+const NATURAL_VOICES = [
+  { id: "amy",    label: "Amy · UK female",   opts: { engine: "neural", voice: "Amy",    language: "en-GB" } },
+  { id: "brian",  label: "Brian · UK male",   opts: { engine: "neural", voice: "Brian",  language: "en-GB" } },
+  { id: "arthur", label: "Arthur · UK male",  opts: { engine: "neural", voice: "Arthur", language: "en-GB" } },
+  { id: "joanna", label: "Joanna · US female",opts: { engine: "neural", voice: "Joanna", language: "en-US" } },
+  { id: "matthew",label: "Matthew · US male", opts: { engine: "neural", voice: "Matthew",language: "en-US" } },
+  { id: "nova",   label: "Nova · OpenAI",     opts: { provider: "openai", voice: "nova" } },
+  { id: "onyx",   label: "Onyx · OpenAI",     opts: { provider: "openai", voice: "onyx" } },
+];
+
+// Split text into chunks at sentence boundaries, each under `max` characters.
+function chunkText(text, max) {
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
+  const out = [];
+  let buf = "";
+  for (const s of sentences) {
+    if ((buf + s).length > max && buf) { out.push(buf.trim()); buf = ""; }
+    buf += s;
+  }
+  if (buf.trim()) out.push(buf.trim());
+  return out;
+}
+
+function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
+  const [supported, setSupported] = useState(true);
+  const [status, setStatus] = useState("idle"); // idle | playing | paused | loading
+  const [showOpts, setShowOpts] = useState(false);
+  const [engine, setEngine] = useState("device"); // device | natural
+  const voices = useVoices();
+  const [voiceName, setVoiceName] = useState(null);
+  const [naturalId, setNaturalId] = useState("amy");
+  const [rate, setRate] = useState(0.95);
+  const [note, setNote] = useState("");
+
+  const audioRef = useRef(null);   // current <audio> for the natural engine
+  const cancelRef = useRef(false); // aborts the natural playback loop
+
+  useEffect(() => {
+    setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
+    try {
+      const s = JSON.parse(localStorage.getItem("tsa.voice") || "{}");
+      if (s.engine) setEngine(s.engine);
+      if (s.name) setVoiceName(s.name);
+      if (s.naturalId) setNaturalId(s.naturalId);
+      if (s.rate) setRate(s.rate);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("tsa.voice", JSON.stringify({ engine, name: voiceName, naturalId, rate })); } catch {}
+  }, [engine, voiceName, naturalId, rate]);
+
+  const hardStop = () => {
+    cancelRef.current = true;
+    try { window.speechSynthesis?.cancel(); } catch {}
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setStatus("idle");
+  };
+
+  useEffect(() => () => hardStop(), []);      // unmount
+  useEffect(() => { hardStop(); setNote(""); }, [resetKey]); // page changed
+
+  if (!supported && engine === "device") return null;
+
+  const chosen = voices.find(v => v.name === voiceName) || voices[0] || null;
+
+  // ---- device engine (Web Speech API) ----
+  const startDevice = (text) => {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    chunkText(text, 220).forEach((chunk, i, arr) => {
+      const u = new SpeechSynthesisUtterance(chunk);
+      if (chosen) { u.voice = chosen; u.lang = chosen.lang; } else { u.lang = "en-GB"; }
+      u.rate = rate; u.pitch = 1;
+      if (i === arr.length - 1) u.onend = () => setStatus("idle");
+      synth.speak(u);
+    });
+    setStatus("playing");
+  };
+
+  // ---- natural engine (Puter.js cloud TTS) ----
+  const startNatural = async (text) => {
+    if (!window.puter?.ai?.txt2speech) {
+      setNote("Cloud voice unavailable — using device voice.");
+      return startDevice(text);
+    }
+    const v = NATURAL_VOICES.find(x => x.id === naturalId) || NATURAL_VOICES[0];
+    const parts = chunkText(text, 2800);
+    cancelRef.current = false;
+    setStatus("loading");
+    try {
+      for (let i = 0; i < parts.length; i++) {
+        if (cancelRef.current) return;
+        const audio = await window.puter.ai.txt2speech(parts[i], v.opts);
+        if (cancelRef.current) return;
+        audio.playbackRate = rate;
+        audioRef.current = audio;
+        setStatus("playing");
+        await new Promise((res) => {
+          audio.onended = res;
+          audio.onerror = res;
+          audio.play().catch(res);
+        });
+      }
+      if (!cancelRef.current) setStatus("idle");
+    } catch (e) {
+      setNote("Cloud voice failed — using device voice.");
+      hardStop();
+      startDevice(text);
+    }
+  };
+
+  const start = () => {
+    setNote("");
+    const text = (getText() || "").replace(/\s+/g, " ").trim();
+    if (!text) return;
+    cancelRef.current = false;
+    engine === "natural" ? startNatural(text) : startDevice(text);
+  };
+
+  const toggle = () => {
+    if (status === "idle") return start();
+    if (status === "loading") return hardStop();
+    if (status === "playing") {
+      if (engine === "natural") audioRef.current?.pause();
+      else window.speechSynthesis.pause();
+      setStatus("paused");
+      return;
+    }
+    if (status === "paused") {
+      if (engine === "natural") audioRef.current?.play();
+      else window.speechSynthesis.resume();
+      setStatus("playing");
+    }
+  };
+
+  const btnLabel = status === "idle" ? label
+    : status === "loading" ? "Loading…"
+    : status === "playing" ? "Pause" : "Resume";
+
+  return (
+    <span className="relative inline-flex items-center gap-1">
+      <button onClick={toggle}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+          status === "idle"
+            ? "border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-800"
+            : "border-teal-300 bg-teal-50 text-teal-800"}`}
+        aria-label={btnLabel}>
+        {status === "playing" ? <Pause size={14} /> : status === "paused" ? <Play size={14} /> : <Volume2 size={14} />}
+        {btnLabel}
+      </button>
+      {status !== "idle" && (
+        <button onClick={hardStop}
+          className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:text-slate-800"
+          aria-label="Stop reading">
+          <Square size={13} />
+        </button>
+      )}
+      <button onClick={() => setShowOpts(o => !o)}
+        className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-400 hover:text-slate-700"
+        aria-label="Voice settings" title="Voice settings">
+        <ChevronRight size={13} className={showOpts ? "rotate-90 transition-transform" : "transition-transform"} />
+      </button>
+
+      {showOpts && (
+        <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-lg">
+          <div className="mb-2 inline-flex rounded-lg border border-slate-200 p-0.5">
+            {[["device", "Device"], ["natural", "Natural ★"]].map(([id, lbl]) => (
+              <button key={id} onClick={() => { setEngine(id); hardStop(); }}
+                className={`px-2.5 py-1 text-xs rounded-md ${engine === id ? "bg-teal-600 text-white" : "text-slate-600"}`}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+
+          {engine === "device" ? (
+            <>
+              <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Voice</label>
+              <select value={chosen?.name || ""} onChange={e => { setVoiceName(e.target.value); hardStop(); }}
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                {voices.length === 0 && <option>Loading voices…</option>}
+                {voices.map(v => (
+                  <option key={v.name} value={v.name}>
+                    {v.name}{/natural|premium|enhanced|google/i.test(v.name + v.voiceURI) ? "  ★" : ""} — {v.lang}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-slate-400">macOS: add an “(Enhanced)” voice in System Settings → Accessibility → Spoken Content → Manage Voices.</p>
+            </>
+          ) : (
+            <>
+              <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Cloud voice</label>
+              <select value={naturalId} onChange={e => { setNaturalId(e.target.value); hardStop(); }}
+                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                {NATURAL_VOICES.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+              <p className="mt-1.5 text-xs text-slate-400">Powered by Puter.js — needs internet; free tier, no sign-in for light use. Page text is sent to the voice provider.</p>
+            </>
+          )}
+
+          <label className="mt-3 block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Speed {rate.toFixed(2)}×</label>
+          <input type="range" min="0.7" max="1.3" step="0.05" value={rate}
+            onChange={e => setRate(parseFloat(e.target.value))} className="w-full" />
+          {note && <p className="mt-2 text-xs text-amber-600">{note}</p>}
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ---- the 5-step ladder + concept view -------------------------------------
 const STEP_META = [
   { icon: Target, label: "Concept", field: "title", accent: "text-teal-700" },
@@ -3492,6 +3777,14 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
     { id: "deep", label: "Understand deeply" },
     { id: "simply", label: "Explain simply" },
   ];
+  const speakText = () => {
+    const parts = [c.title];
+    if (mode === "deep") parts.push(c.how, c.example, c.why, c.temenos, c.memory);
+    else if (mode === "simply") parts.push(c.simple, c.example);
+    else parts.push(c.simple, c.example, c.why, c.memory);
+    return parts.filter(Boolean).join(". ");
+  };
+
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
@@ -3499,13 +3792,16 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
       </div>
       <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{c.title}</h1>
 
-      <div className="mt-4 inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
-        {modes.map(m => (
-          <button key={m.id} onClick={() => setMode(m.id)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${mode === m.id ? "bg-teal-600 text-white" : "text-slate-600 hover:text-slate-900"}`}>
-            {m.label}
-          </button>
-        ))}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+          {modes.map(m => (
+            <button key={m.id} onClick={() => setMode(m.id)}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${mode === m.id ? "bg-teal-600 text-white" : "text-slate-600 hover:text-slate-900"}`}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <SpeakButton getText={speakText} resetKey={`${conceptId}:${mode}`} />
       </div>
 
       {slideImgSrc(conceptId) && (
@@ -3857,6 +4153,16 @@ function LabView({ id, onOpen }) {
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{l.title}</h1>
       <p className="mt-2 text-slate-700 leading-relaxed">{l.goal}</p>
+
+      <div className="mt-3">
+        <SpeakButton
+          getText={() => [
+            l.title, l.goal,
+            ...l.steps.flatMap((s, i) => [`Step ${i + 1}.`, s.do, s.expect ? `Expect: ${s.expect}` : ""]),
+            l.verify ? `Done when: ${l.verify}` : "",
+          ].filter(Boolean).join(". ")}
+          resetKey={l.id} />
+      </div>
 
       <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm">
         <div><span className="text-slate-400 uppercase text-xs tracking-wide mr-2">Application</span>{withMono(l.app)}</div>
