@@ -2304,6 +2304,121 @@ const CONCEPTS = {
     temenos: "Populated by publishing; eligibility and variation filter what each customer sees; existing arrangements continue on the product version they were created from even after it expires.",
     related: ["lpb2proofpublish", "aa2catalog"],
   },
+
+  // ============ INSTRUCTOR TRAINING · DAY 1 ============
+  // ---- Navigation & Commands ----
+  t24command: {
+    title: "The Command Line",
+    simple: "The box at the top where you type an instruction directly instead of clicking through menus.",
+    example: "Typing `S CUSTOMER 100343` opens customer 100343 in See (view) mode; `I CUSTOMER` starts a new one.",
+    why: "Menus are for discovery; the command line is faster once you know the function and table you want.",
+    how: "A command is usually FUNCTION + APPLICATION + (record id). Common functions: S = See (read-only view), I = Input (create/amend), A = Authorise, D = Delete/Reverse, C = Copy, P = Print, L = List. Add a record id to go straight to it, or leave it blank to be prompted.",
+    memory: "Function · Application · Id  →  e.g. S CUSTOMER 100343.",
+    temenos: "Same syntax as classic T24; the Browser command box accepts it directly. Versions are called as APPLICATION,VERSION (e.g. CUSTOMER,INPUT). Enquiries use ENQ <name>.",
+    related: ["menufields", "fieldhelp", "enqcommand", "rbhp"],
+  },
+  menufields: {
+    title: "Menus, Menu Items & Fields",
+    simple: "How the classic tree menu is organised, and how an input screen is laid out into fields, multi-values and tabs.",
+    example: "Customer sits under User Menu > Customer Relationship > Customer; the input screen groups fields onto tabs like Personal, Address, Officer.",
+    why: "Knowing the menu path and the field layout is what lets you find and complete a record without guesswork.",
+    how: "Menu items are shortcuts to a function+version. On a screen: single-value fields hold one value; multi-value fields (marked with + / arrows) repeat; associated multi-values move together; tabs group related fields. Mandatory fields must be filled before commit.",
+    memory: "Menu item = a saved command; screen = fields on tabs, some repeating.",
+    temenos: "Menu items are held in the menu design; each maps to an application and version. Field behaviour comes from the application's dictionary (STANDARD.SELECTION).",
+    related: ["t24command", "fieldhelp", "custrec"],
+  },
+  fieldhelp: {
+    title: "Field Help & Technical Names",
+    simple: "Every field can tell you its underlying table, its technical field name and the data model behind it.",
+    example: "On the Customer screen you check a field's help and see it writes to CUSTOMER, field SECTOR — useful when building an enquiry or a mapping.",
+    why: "Business labels differ from the technical names you need for enquiries, DFE mappings, APIs and support tickets.",
+    how: "Use the field's help / info action to reveal: the application (table) it belongs to, the technical field name, the field number, and the model/data type. The command line and enquiry designer use those technical names, not the on-screen labels.",
+    memory: "Label is for people; the help shows the name the system uses.",
+    temenos: "Technical names come from STANDARD.SELECTION for the application; enquiries, versions and the API all reference them.",
+    related: ["menufields", "enqcommand", "t24command"],
+  },
+  enqcommand: {
+    title: "Enquiry Command & Selection",
+    simple: "Running an enquiry from the command line and narrowing it with selection criteria on technical fields.",
+    example: "`ENQ CUSTOMER.LIST` lists customers; you add a selection like SECTOR EQ 1001 to filter, using the technical field name.",
+    why: "Enquiries are the main way to read data in bulk; selection criteria let you answer a specific question fast.",
+    how: "Type ENQ <enquiry name>, then optionally add selection lines (field, operator, value). Operators include EQ, NE, GT, LT, RG (range), LK (like). Results can be sorted and drilled into. The field names used are the technical ones from field help.",
+    memory: "ENQ <name> → add field + operator + value to filter.",
+    temenos: "Enquiries are defined in the ENQUIRY application (thousands of them); each names the FILE.NAME it reads. The record selector filters with Filter by / Operand / Value. Unauthorised-data variants read $NAU files (e.g. AA.AC.ARRANGEMENT.IHLD → AA.ARRANGEMENT.ACTIVITY$NAU). NOFILE enquiries build their rows at runtime.",
+    related: ["fieldhelp", "t24command", "worklist"],
+  },
+  // ---- Security & Access ----
+  companybranch: {
+    title: "Company / Branch Management & Access",
+    simple: "Transact can run many companies (branches/entities) in one system; a user's access is defined per company.",
+    example: "A head-office user may see all provinces; a branch user only their own company's customers and accounts.",
+    why: "One installation serves a whole banking group, so access and reporting must be scoped by company.",
+    how: "Each company has its own code and mnemonic. A user record names the companies they can sign into and their home company. Branch/organisational structure also drives the DAO code hierarchy and MIS roll-up.",
+    memory: "One system, many companies; access is granted company by company.",
+    temenos: "COMPANY holds each entity; the USER record lists Company Restriction / allowed companies; see also USER.SMS.GROUP for grouping that access.",
+    related: ["usersmsgroup", "ussp", "dao"],
+  },
+  usersmsgroup: {
+    title: "USER.SMS.GROUP (Multi-Application / Multi-Company Access)",
+    simple: "A reusable bundle of which applications and which companies a user is allowed — or not allowed — to use.",
+    example: "A 'Branch Officer' SMS group allows CUSTOMER, ACCOUNT and AA applications across all province companies, and is attached to every branch officer's USER record.",
+    why: "Setting application and company access on every user individually is slow and inconsistent; a group is defined once and reused.",
+    how: "The group holds an Allowed list and a Not Allowed list for applications and for companies. Attach the group to a USER record instead of listing every permission on the user. What the user can actually reach = their SMS group(s) combined with their USSP.",
+    memory: "USER.SMS.GROUP = a shared permission set: Allowed vs Not Allowed, apps × companies.",
+    temenos: "USER.SMS.GROUP is referenced from USER; works alongside the User Security Profile (USSP) that governs the RBHP.",
+    related: ["companybranch", "ussp", "rbhp", "usermaint"],
+  },
+  usermaint: {
+    title: "Maintaining Users & Security Groups",
+    simple: "Creating and amending the USER records staff sign in with, and the security groups those users are attached to.",
+    example: "Onboarding a new branch officer: create their USER record, set sign-on name and initial password, home company and department, attach the 'Branch Officer' USER.SMS.GROUP, and authorise it.",
+    why: "Every person who touches Transact needs a controlled, auditable identity with exactly the right access — no more, no less.",
+    how: "A USER record carries: sign-on name, password (and a forced change on first login), start/end date, home company and the companies they may sign into, department/DAO code, language, classification (INPUTTER / AUTHORISER / etc.), and one or more USER.SMS.GROUP references. Status can be set to closed to suspend access without deleting history. Maintaining the groups themselves (adding an application or company to the Allowed list) instantly changes access for every user attached to that group. All of it is input-and-authorise.",
+    memory: "USER = who signs in + their companies + their SMS group(s); close, don't delete, to suspend.",
+    temenos: "USER application; classification drives input vs authorise rights; SMS group changes cascade to all attached users; run under the appropriate admin sign-on.",
+    related: ["usersmsgroup", "companybranch", "ussp", "dao", "spf"],
+  },
+  spf: {
+    title: "System Parameter File (SPF)",
+    simple: "The single system-wide record that holds bank-wide settings, including the password policy every user must meet.",
+    example: "SPF/SYSTEM sets Password Min Length, whether passwords need upper/lower/numeric/other characters, and how many past passwords can't be reused (Pwd Repetition).",
+    why: "Security rules and system behaviour should be set once, centrally, not per user.",
+    how: "SPF holds fields like Pwd Min Length, Pass Upper Alpha / Lower Alpha / Numeric / Other, Pwd Repetition, Autolog Time (idle sign-off), Version Auth Ctrl and Branch Id. The password fields are enforced whenever a USER record's password is set or changed. It is one record (SYSTEM), amended and authorised like any other.",
+    memory: "SPF = the one record of bank-wide rules; the password policy lives here, not on the user.",
+    temenos: "SPF, record SYSTEM; password composition rules apply to every USER; Autolog Time forces re-login after inactivity.",
+    related: ["usermaint", "usersmsgroup", "ussp"],
+  },
+  recordlock: {
+    title: "Record Locks & the $NAU File",
+    simple: "While one user has a record open for input, it is locked; anyone else who opens it is told who holds it.",
+    example: "You open customer 100154 to amend and get 'RECORD IS LOCKED BY USER YMBUSER5' — someone else is already editing it.",
+    why: "Two people editing the same record at once would overwrite each other; the lock forces one-at-a-time input.",
+    how: "The lock lives in RECORD.LOCK, keyed by file + record id, and carries the holding user, the window name, and an expire time so a crashed session's lock clears itself. Unauthorised versions of a record sit in a separate file suffixed $NAU (e.g. F.CUSTOMER$NAU) until authorised, when they move to the live file.",
+    memory: "Open for input = locked; $NAU = the unauthorised copy waiting to be authorised.",
+    temenos: "RECORD.LOCK holds active locks; $NAU (Not-Authorised) files hold INAU records; authorising moves the record to the live file and releases the lock.",
+    related: ["aa2recordstatus", "usermaint", "menufields"],
+  },
+  // ---- Customer & Account Basics ----
+  custindivnonindiv: {
+    title: "Individual vs Non-Individual Customer",
+    simple: "A customer record is either a person (Individual) or an organisation (Non-Individual); each captures different details.",
+    example: "An Individual captures name, date of birth, gender and nationality; a Non-Individual (a company, SACCO or NGO) captures registration number, incorporation date and legal form.",
+    why: "People and organisations are onboarded, KYC'd and reported differently, but both live in the same CUSTOMER application.",
+    how: "The customer type drives which fields and tabs appear. Non-Individual customers can also be created automatically — e.g. an abbreviated group's members are held as lightweight Non-Individual records with only minimum details.",
+    memory: "Individual = a person; Non-Individual = an organisation; same table, different fields.",
+    temenos: "Both are CUSTOMER records; the type controls the field set; Sector 8001 additionally marks a customer as a bank.",
+    related: ["custrec", "nonindiv", "custid", "abbrevgroup"],
+  },
+  abbrevgroup: {
+    title: "Abbreviated vs Non-Abbreviated Groups",
+    simple: "In an abbreviated group the members are captured as lightweight info-only records; in a non-abbreviated (standard) group each member is a full customer.",
+    example: "An 'Organised/Registered Group' set up as ABBREVIATED lists its members with just name, designation and date of birth; a 'Joint Liability/Solidarity Group' set up as STANDARD requires each member to already exist as a full CUSTOMER.",
+    why: "Registering every member of a large community group as a full customer is heavy; abbreviated groups let the bank record the structure without full onboarding.",
+    how: "The Group Type sets the Group Class: ABBREVIATED or STANDARD (non-abbreviated). Abbreviated group members are held on the group record itself as multi-values (M Name.1, M Designation.1, M Date Of Birth.1 …) and, on authorisation, a lightweight Non-Individual customer is auto-created. Standard-group members are linked by their existing customer id. The abbreviated group is captured through a dedicated version (…MAIN.ABBR).",
+    memory: "Abbreviated group = members are info-only lines on the group; Standard group = members are real customers.",
+    temenos: "Group Class ABBREVIATED vs STANDARD comes from the Group Type; abbreviated members auto-create a Non-Individual CUSTOMER with minimum details; group types seen: YMB.REG.GRP, YMB.SOL.GRP, YMB.NONABR.GRP.",
+    related: ["custindivnonindiv", "creategroup", "grouptype", "centre"],
+  },
 };
 
 const DIAGRAMS = {
@@ -2658,6 +2773,12 @@ const SLIDE_IMG = {
   lpb2reporting: "lpb2reporting", lpb2position: "lpb2position", lpb2apr: "lpb2apr",
   lpb2prodline: "lpb2prodline", lpb2prodgroup: "lpb2prodgroup", lpb2designer: "lpb2designer",
   lpb2proofpublish: "lpb2proofpublish", lpb2catalog: "lpb2catalog",
+  // Instructor Training — Day 1 (real screenshots from the training environment)
+  usermaint: "users", usersmsgroup: "smsgroup", spf: "spf",
+  enqcommand: "enquiry", custindivnonindiv: "custnonindiv", menufields: "custindiv",
+  recordlock: "recordlock", t24command: "command",
+  companybranch: "welcome", abbrevgroup: "abbrevacc",
+  aa2recordstatus: "aa2recordstatus",
 };
 const slideImgSrc = (conceptId) => {
   const f = SLIDE_IMG[conceptId];
@@ -3493,6 +3614,71 @@ const COURSES = [
       q("Position Management enquiry PM.FXPOS shows…", ["cash flow", "rate gap", "forex position and break-even", "the payoff"], 1, "PM.CAS = cash flow; PM.GAP = rate gap."),
       q("The product build process is…", ["Publish → Proof → Design", "Design → Proof → Publish", "one step", "Proof → Design → Publish"], 1, "Publishing cascades proof from parent to children."),
       q("A product reaches the catalogue when…", ["it is designed", "proofed, published and within Available/Expiry dates", "a customer asks", "COB runs"], 1, "The catalogue is the menu customers order from."),
+    ],
+  },
+  {
+    id: "training1",
+    code: "TRAINING · DAY 1",
+    title: "Instructor Training — Day 1",
+    description: "Notes from the classroom sessions: navigation and commands, security and multi-company access, and the customer/account basics. Screenshots added from the training environment.",
+    sections: [
+      {
+        id: "training1-1", title: "Navigation & Commands",
+        description: "Getting around Transact: the menu tree, the command line, screen layout, field help and enquiries.",
+        concepts: ["menufields", "t24command", "fieldhelp", "enqcommand", "recordlock"],
+        quiz: [
+          q("A Transact command is structured as…", ["Application only", "Function + Application + (record id), e.g. S CUSTOMER 100343", "A menu number", "Company + user"], 1, "Function (S/I/A/D…), the application, then optionally the record id."),
+          q("Which function opens a record read-only?", ["I", "S (See)", "A", "D"], 1, "S = See; I = Input, A = Authorise, D = Delete/Reverse."),
+          q("A version is called from the command line as…", ["APPLICATION.VERSION", "APPLICATION,VERSION (e.g. CUSTOMER,INPUT)", "VERSION only", "ENQ APPLICATION"], 1, "Comma separates application and version."),
+          q("Field help on a screen tells you…", ["the customer's balance", "the underlying table, technical field name and data model", "who last logged in", "the menu path"], 1, "Business labels differ from the technical names enquiries and APIs use."),
+          q("You run an enquiry from the command line with…", ["S <name>", "ENQ <name>", "I <name>", "RUN <name>"], 1, "ENQ <enquiry name>, then optional selection criteria."),
+          q("Enquiry selection criteria use…", ["the on-screen labels", "the technical field names from field help", "menu item names", "the version name"], 1, "Selection references real field names, e.g. SECTOR EQ 1001."),
+          q("A multi-value field…", ["holds exactly one value", "repeats, holding several values", "is always mandatory", "cannot be edited"], 1, "Marked with + / arrows; associated multi-values move together."),
+          q("'RECORD IS LOCKED BY USER…' means…", ["the record is deleted", "another user has it open for input", "your rights are wrong", "COB is running"], 1, "Locks force one-at-a-time editing; held in RECORD.LOCK with an expire time."),
+          q("An unauthorised record lives in…", ["the live file", "a $NAU (Not-Authorised) file until authorised", "RECORD.LOCK", "the audit file"], 1, "e.g. F.CUSTOMER$NAU; authorising moves it to the live file."),
+        ],
+      },
+      {
+        id: "training1-2", title: "Security & Multi-Company Access",
+        description: "Company/branch structure, how access is granted to a user, and maintaining users and security groups.",
+        concepts: ["companybranch", "usersmsgroup", "usermaint", "spf"],
+        quiz: [
+          q("A USER record carries…", ["only a password", "sign-on name, password, companies, department/DAO, classification and SMS group(s)", "the customer's KYC", "the menu design"], 1, "It is the controlled identity a staff member signs in with."),
+          q("To suspend a user without losing their audit history you…", ["delete the USER record", "set its status to closed", "remove their password", "change the company"], 1, "Close, don't delete."),
+          q("Adding an application to a USER.SMS.GROUP's Allowed list…", ["affects only new users", "changes access for every user attached to that group", "needs COB to apply", "has no effect"], 1, "Group changes cascade to all attached users."),
+          q("A user's classification (INPUTTER / AUTHORISER)…", ["sets their language", "decides whether they can input, authorise, or both", "picks their home page", "sets the DAO"], 1, "It governs the two-person control."),
+          q("The bank-wide password policy (min length, character types, reuse) is set in…", ["each USER record", "the SPF (System Parameter File), record SYSTEM", "USER.SMS.GROUP", "the RBHP"], 1, "SPF holds one system-wide settings record; USER records must meet it."),
+          q("SPF's Autolog Time controls…", ["password length", "forced sign-off after inactivity", "the number of companies", "COB start"], 1, "Idle sessions are logged off automatically."),
+          q("Transact running many companies in one system means…", ["one branch only", "a whole banking group is served, with access scoped per company", "each company needs its own server", "no reporting by branch"], 1, "COMPANY holds each entity; users are granted access company by company."),
+          q("USER.SMS.GROUP holds…", ["the user's password", "a reusable Allowed / Not Allowed list of applications and companies", "the customer's KYC", "the menu design"], 1, "Defined once and attached to many USER records."),
+          q("What a user can actually reach is…", ["only the USSP", "only the SMS group", "their SMS group(s) combined with their USSP", "any menu item"], 2, "SMS group gives application/company rights; USSP governs the RBHP navigation."),
+          q("Why use an SMS group instead of setting rights on each user?", ["it's mandatory", "consistency and speed — define once, reuse", "it changes interest rates", "it creates the customer"], 1, "Individual per-user permissions are slow and drift out of sync."),
+          q("A branch user's access is typically…", ["all companies", "their own company only, unless granted more", "head office only", "decided at COB"], 1, "Home company plus any explicitly allowed companies."),
+        ],
+      },
+      {
+        id: "training1-3", title: "Customer & Group Basics",
+        description: "Individual vs non-individual customers, and abbreviated vs non-abbreviated (standard) groups.",
+        concepts: ["custindivnonindiv", "abbrevgroup"],
+        quiz: [
+          q("An Individual customer captures…", ["registration number and legal form", "name, date of birth, gender, nationality", "no personal details", "only a mnemonic"], 1, "Non-Individuals capture incorporation/registration details instead."),
+          q("Individual and Non-Individual customers are…", ["separate applications", "the same CUSTOMER application with different field sets", "stored in RELATION", "never authorised"], 1, "Customer type drives which fields and tabs appear."),
+          q("In an abbreviated group the members are…", ["full customers linked by id", "info-only lines on the group record", "not recorded", "each a separate account"], 1, "Standard (non-abbreviated) groups link members by their existing customer id."),
+          q("On authorising an abbreviated group, each member…", ["must be onboarded first", "gets a lightweight Non-Individual CUSTOMER auto-created", "gets a loan", "is ignored"], 1, "Minimum details only; no full onboarding."),
+          q("Group Class (ABBREVIATED vs STANDARD) is set by…", ["the member", "the Group Type", "the account officer", "COB"], 1, "The Group Type drives the class and the entry version (…MAIN.ABBR)."),
+          q("The Customer ID is…", ["alphabetic", "a 7–10 digit number, can be auto-generated", "the mnemonic", "the company code"], 1, "Numeric; the mnemonic→ID link lives in MNEMONIC.CUSTOMER."),
+        ],
+      },
+    ],
+    assessment: [
+      q("S CUSTOMER 100343 does what?", ["creates customer 100343", "opens customer 100343 read-only", "deletes it", "authorises it"], 1, "S = See (view) mode."),
+      q("To start a new record you use function…", ["S", "I (Input)", "A", "L"], 1, "I = Input for create/amend."),
+      q("Field help reveals…", ["the menu path", "the underlying table and technical field name", "the user's rights", "the COB time"], 1, "Needed for enquiries, mappings and APIs."),
+      q("Enquiries are run with…", ["RUN", "ENQ <name>", "S <name>", "P <name>"], 1, "Then optional selection on technical field names."),
+      q("COMPANY represents…", ["a customer", "a company/branch/entity in the multi-company system", "an account product", "a menu"], 1, "Access is scoped per company."),
+      q("USER.SMS.GROUP is…", ["a customer group", "a reusable application/company Allowed–Not Allowed permission set for users", "a lending group", "a menu item"], 1, "Attached to USER; works with the USSP."),
+      q("Individual vs Non-Individual is decided by…", ["two different tables", "the customer type on the one CUSTOMER application", "the account product", "the branch"], 1, "Type drives the field set."),
+      q("An abbreviated group…", ["links members by customer id", "holds members as info-only lines and auto-creates lightweight Non-Individual customers", "cannot have members", "is always a loan group"], 1, "Standard groups link full customers; abbreviated groups don't."),
     ],
   },
 ];
@@ -4336,6 +4522,7 @@ export default function App() {
   const NAV = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "courses", label: "Courses", icon: BookOpen },
+    { id: "training", label: "Training", icon: GraduationCap, target: { view: "course", courseId: "training1" } },
     { id: "flashcards", label: "Flashcards", icon: BookMarked },
     { id: "diagrams", label: "Diagrams", icon: GitBranch },
     { id: "labs", label: "Sandbox", icon: Wrench },
@@ -4362,12 +4549,17 @@ export default function App() {
           <nav className="mt-3 flex flex-wrap items-center gap-1">
             {NAV.map(n => {
               const Icon = n.icon;
-              const active = nav.view === n.id
-                || (n.id === "courses" && ["course", "section", "concept", "quiz", "assessment"].includes(nav.view))
-                || (n.id === "diagrams" && nav.view === "diagram")
-                || (n.id === "labs" && nav.view === "lab");
+              const inTraining = nav.courseId === "training1"
+                || conceptCourse[nav.conceptId] === "training1"
+                || (nav.view === "quiz" && COURSES.find(c => c.id === "training1")?.sections.some(s => s.id === nav.sectionId));
+              const active = n.id === "training"
+                ? inTraining
+                : (nav.view === n.id
+                  || (n.id === "courses" && ["course", "section", "concept", "quiz", "assessment"].includes(nav.view) && !inTraining)
+                  || (n.id === "diagrams" && nav.view === "diagram")
+                  || (n.id === "labs" && nav.view === "lab"));
               return (
-                <button key={n.id} onClick={() => go({ view: n.id })}
+                <button key={n.id} onClick={() => go(n.target || { view: n.id })}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-indigo-50 text-indigo-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
                   <Icon size={15} /> {n.label}
                 </button>
