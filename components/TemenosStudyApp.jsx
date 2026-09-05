@@ -133,9 +133,10 @@ const CONCEPTS = {
     simple: "The staff member responsible for a customer, defaulted onto all that customer's transactions.",
     example: "Every loan and account for a customer carries the same officer, so performance can be reported by officer.",
     why: "It enables MIS at account-officer level and clear ownership of relationships.",
-    memory: "DAO = default account owner, stamped on every transaction.",
-    temenos: "DEPT.ACCT.OFFICER; can link to a USER ID to auto-subscribe that user to the officer's tasks; bulk transfers move a whole portfolio between DAOs.",
-    related: ["custrec", "relation", "bulkao"],
+    how: "DAO codes are set up as a hierarchy, not a flat list: each organisational level (Head Office, Province/Region, Branch, Department, individual officer) is given its own numeric code range, and each range records a Level and a Parent Level so the codes roll up — a Branch's parent level points to its Province, a Department's parent level points to its Branch, and so on. Creating a new officer means picking the next free code in the right range under the correct parent.",
+    memory: "DAO = default account owner, stamped on every transaction. Ranges roll up: Head Office → Province → Branch → Department → Officer.",
+    temenos: "DEPT.ACCT.OFFICER; typically banded by range per level, e.g. 1000s = Head Office, 2000s = Provinces, 3000s = Branches, 4000s = Departments, 5000s–6000s = individual T24 users/staff — each record's Level and Parent Level field link it up the hierarchy. Can link to a USER ID to auto-subscribe that user to the officer's tasks; bulk transfers move a whole portfolio between DAOs.",
+    related: ["custrec", "relation", "bulkao"], diagram: "daohierarchy",
   },
   prospect: {
     title: "Prospect Customer",
@@ -2361,6 +2362,16 @@ const DIAGRAMS = {
       { label: "Arrangement", sub: "product + customer = one instance", tag: "AA.ARRANGEMENT" },
     ],
   },
+  daohierarchy: {
+    title: "DAO Code Hierarchy", caption: "Officer codes are banded by organisational level; each level's Parent Level rolls it up to the one above.",
+    steps: [
+      { label: "Head Office", sub: "e.g. code range 1000–1999", tag: "DEPT.ACCT.OFFICER" },
+      { label: "Provinces / Regions", sub: "e.g. 2000–2999, parent level = Head Office" },
+      { label: "Branch", sub: "e.g. 3000–3999, parent level = its Province" },
+      { label: "Department", sub: "e.g. 4000–4999, parent level = its Branch" },
+      { label: "T24 Users / General Staff", sub: "e.g. 5000–6999 — individual officer codes, parent level = their Department" },
+    ],
+  },
   aa2statusflow: {
     title: "Record Status Lifecycle", caption: "From a half-filled draft to a fully live record — each step is a checkpoint. RNAU branches off later, when someone reverses an already-live record.",
     steps: [
@@ -2485,6 +2496,21 @@ const LABS = [
     ],
     verify: "Both customers show the relationship; only one side was set up.",
     related: ["relation", "counterparty"],
+  },
+  {
+    id: "lab-daocode", courseId: "fif", section: "fif-2",
+    title: "Create a new Officer Code (DAO)",
+    goal: "Add a new account-officer code in the right place in the DAO hierarchy.",
+    app: "DEPT.ACCT.OFFICER", menu: "Admin Menu > (Account Officer / DAO setup)",
+    prereq: "Know which Branch/Department the new officer sits under, and the next free code in that range.",
+    steps: [
+      { do: "Open DEPT.ACCT.OFFICER and review the existing hierarchy — Head Office, Provinces, Branch, Department ranges.", expect: "Each level has its own code range (e.g. 1000s Head Office, 2000s Provinces, 3000s Branch, 4000s Department)." },
+      { do: "Pick the next free code inside the correct range for the new officer's level.", expect: "Codes are not reused across levels — a Branch code must come from the Branch range, not the Department range." },
+      { do: "Set the Parent Level to the code of the Branch/Department the officer reports into.", expect: "This is what rolls the new officer's MIS up into their branch and province." },
+      { do: "Commit and authorise the new officer code.", expect: "Status INAU until a supervisor authorises; then LIVE." },
+    ],
+    verify: "The new officer code appears under the correct parent in the hierarchy, and can be assigned as a customer's DAO.",
+    related: ["dao"],
   },
   {
     id: "lab-group", courseId: "fif", section: "fif-4",
@@ -2681,6 +2707,8 @@ const COURSES = [
           q("A non-individual (company) customer differs by capturing…", ["No mnemonic", "Incorporation / registration details instead of personal ones", "No address", "No account officer"], 1, "Non-individual customers record registration data rather than personal data."),
           q("The Sector field on the customer…", ["Sets the mnemonic", "Drives downstream processing and classification", "Is optional and unused", "Is the account officer"], 1, "Sector feeds reporting and downstream processing rules."),
           q("A customer flagged as a BANK (Sector 8001) affects…", ["Login speed", "Payment processing behaviour", "The mnemonic format", "Dividend points"], 1, "Bank customers are treated differently in payment processing."),
+          q("DAO codes are set up as…", ["A flat, unordered list", "A hierarchy with a code range and Parent Level per organisational level", "One code for the whole bank", "A random number per customer"], 1, "Head Office, Province, Branch and Department each get their own range, linked via Parent Level."),
+          q("A new Branch-level officer code should come from…", ["Any unused code bank-wide", "The Branch range, with Parent Level set to its Province/parent", "The Department range", "The Head Office range"], 1, "Codes stay within their level's range; Parent Level rolls the code up to its owner."),
         ],
       },
       {
