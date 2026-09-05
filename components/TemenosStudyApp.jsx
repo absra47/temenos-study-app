@@ -706,7 +706,17 @@ const CONCEPTS = {
     why: "Input-and-authorise is the core two-person control.",
     memory: "Find Loan → Unauthorised → Approve.",
     temenos: "Retail Operations → Find Loan → Unauthorised → enter Owner → Approve from Pending Approval; if the product auto-disburses, status becomes Current.",
-    related: ["aa2overrides", "aa2findloan"], diagram: "aa2createflow",
+    related: ["aa2overrides", "aa2findloan", "aa2recordstatus"], diagram: "aa2createflow",
+  },
+  aa2recordstatus: {
+    title: "Record Status Lifecycle (IHLD · INAO · INAU · RNAU · LIVE)",
+    simple: "The stages a record moves through from a half-finished draft to a fully live, production record.",
+    example: "You start a loan for customer 100343 and save it half-filled: IHLD. You commit it: INAU, waiting for a supervisor. They authorise it: LIVE.",
+    why: "Every status is a checkpoint — nothing reaches production without passing input, override and authorisation controls.",
+    how: "IHLD = a draft, not yet submitted to the validation queue. INAO = submitted but blocked on an unaccepted override. INAU = fully committed by the operator, now waiting on a second user (supervisor) to authorise. RNAU = a reversal/cancellation of a live record, itself waiting on supervisor sign-off. LIVE = all checks passed, overrides accepted, supervisor authorised — active in production.",
+    temenos: "IHLD (Input Held): saved as a draft, not committed — e.g. a part-filled AA arrangement for customer 100343 kept aside to finish later. INAO (Input Authorised - Overrides): commit triggered a policy warning (e.g. 'Maximum discount exceeded') that blocks completion until the override is accepted. INAU (Input Authorised - Needs Authorisation): operator hit commit and got 'Txn Complete' — record AA2507602X98 now sits in the pending queue for a supervisor. RNAU (Reverse Unauthorised): a reversal (R mode) of an existing live record is pending supervisor approval — e.g. undoing a loan created by mistake. LIVE: fully authorised and active — generating schedules, accruing interest, posting to the GL.",
+    memory: "Draft (IHLD) → blocked on override (INAO) → committed, needs authorising (INAU) → reversal pending (RNAU) → LIVE.",
+    related: ["aa2overrides", "aa2authorise", "aa2findloan"],
   },
 
   // ---- Section 3: Lending Arrangement Overview Enquiries ----
@@ -2770,7 +2780,7 @@ const COURSES = [
       {
         id: "aalf1-2", title: "Creating & Authorising Lending Arrangements",
         description: "The three IDs, customer roles, commitment/term, settlement, and the create-authorise flow.",
-        concepts: ["aa2ids", "aa2roles", "aa2commit", "aa2repayfreq", "aa2settle", "aa2properties", "aa2create", "aa2overrides", "aa2authorise"],
+        concepts: ["aa2ids", "aa2roles", "aa2commit", "aa2repayfreq", "aa2settle", "aa2properties", "aa2create", "aa2overrides", "aa2authorise", "aa2recordstatus"],
         quiz: [
           q("Which ID is generated when the activity is validated?", ["Activity ID (AAACT…)", "Arrangement ID (AA…)", "Account ID", "Customer ID"], 1, "AAACT… is at attempt; AA… (Arrangement ID) is at validation; plus an Account ID."),
           q("The initial arrangement ID before generation is…", ["AA…", "AAACT…", "NEW", "0000"], 2, "It starts as NEW, then IDs are generated."),
@@ -2778,6 +2788,11 @@ const COURSES = [
           q("The Pay Out account is where…", ["repayments are collected", "the loan is disbursed to", "charges are booked", "interest accrues"], 1, "Pay Out = disbursed-to; Pay In = repayments-from."),
           q("Commitment can be entered using which shortcuts?", ["K and B", "T (thousands) and M (millions)", "H and G", "none"], 1, "T = thousands, M = millions; also, either term or maturity is required."),
           q("After accepting overrides on commit, the arrangement is…", ["Current", "Unauthorised", "Closed", "Simulated"], 1, "It's Unauthorised until a second user authorises it."),
+          q("A record saved as a draft, not yet submitted to the validation queue, is…", ["INAU", "IHLD", "LIVE", "RNAU"], 1, "IHLD = Input Held — a half-filled draft kept aside."),
+          q("A commit that triggers an unaccepted policy warning (e.g. 'Maximum discount exceeded') puts the record in…", ["INAO", "IHLD", "LIVE", "INAU"], 0, "INAO = Input Authorised - Overrides: blocked until the override is accepted."),
+          q("An operator commits an arrangement and gets 'Txn Complete'. Its status is now…", ["IHLD", "LIVE", "INAU", "RNAU"], 2, "INAU = fully committed, waiting for a supervisor to authorise."),
+          q("An operator reverses a live record made by mistake; while pending supervisor sign-off it is…", ["RNAU", "INAO", "IHLD", "LIVE"], 0, "RNAU = Reverse Unauthorised — the reversal itself needs authorising."),
+          q("A record that has passed all checks, had overrides accepted, and been authorised is…", ["INAU", "IHLD", "LIVE", "INAO"], 2, "LIVE = active in production — schedules run, interest accrues, GL entries post."),
         ],
       },
       {
@@ -3952,9 +3967,9 @@ function Field({ label, children }) {
 // turn dotted UPPERCASE identifiers into <Mono> chips
 function withMono(text) {
   if (typeof text !== "string") return text;
-  const parts = text.split(/(\b[A-Z][A-Z0-9]+(?:\.[A-Z0-9]+)+\b|\bAAACT\b|\bINAU\b|\bEMI\b|\bRFR\b|\bNAB\b|\bGRC\b|\bDEL\b|\bDAO\b|\bSCV\b|\bRBHP\b|\bUSSP\b|\bDFE\b|\bCOB\b)/g);
+  const parts = text.split(/(\b[A-Z][A-Z0-9]+(?:\.[A-Z0-9]+)+\b|\bAAACT\b|\bINAU\b|\bIHLD\b|\bINAO\b|\bRNAU\b|\bEMI\b|\bRFR\b|\bNAB\b|\bGRC\b|\bDEL\b|\bDAO\b|\bSCV\b|\bRBHP\b|\bUSSP\b|\bDFE\b|\bCOB\b)/g);
   return parts.map((p, i) =>
-    /^[A-Z][A-Z0-9]+(\.[A-Z0-9]+)+$|^(AAACT|INAU|EMI|RFR|NAB|GRC|DEL|DAO|SCV|RBHP|USSP|DFE|COB)$/.test(p)
+    /^[A-Z][A-Z0-9]+(\.[A-Z0-9]+)+$|^(AAACT|INAU|IHLD|INAO|RNAU|EMI|RFR|NAB|GRC|DEL|DAO|SCV|RBHP|USSP|DFE|COB)$/.test(p)
       ? <Mono key={i}>{p}</Mono> : <span key={i}>{p}</span>
   );
 }
