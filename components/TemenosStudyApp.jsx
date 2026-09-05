@@ -569,7 +569,7 @@ const CONCEPTS = {
     example: "Lending, Deposits and Accounts are product lines.",
     why: "It sets the shared foundation every product below it draws from.",
     memory: "Line = the top, owned by Temenos.",
-    temenos: "Internal product lines are created by Temenos; clients can only change the description. Made of reusable business components.",
+    temenos: "Internal product lines are created by Temenos; clients can only change the description. The LENDING line (\"Retail Lending Product such as Mortgages, Lines of Credit\") lists ~27 property classes with a Mandatory Y/N flag each — mandatory ones include ACCOUNT, ACCOUNTING, ACTIVITY.MAPPING, CUSTOMER, ELIGIBILITY, PAYMENT.RULES and PAYMENT.SCHEDULE.",
     related: ["aa2prodgroup", "aa2buscomp"], diagram: "aa2hierarchy",
   },
   aa2prodgroup: {
@@ -578,7 +578,7 @@ const CONCEPTS = {
     example: "Under Lending: Mortgages, Working Capital Loans, Personal Loans.",
     why: "It organises products into meaningful families the bank controls.",
     memory: "Group = a family of products the client defines.",
-    temenos: "User-definable; any number under a line; made of business components selected from the line.",
+    temenos: "User-definable; any number under a line. The BUSINESS.BANKING.LOAN group narrows the line to ~13 property classes and names the specific properties, e.g. Interest Calculation → PRINCIPALINT + PENALTYINT, Charge → NEWARRFEE / PAYOFFFEE / DRAWINGFEE, Payment Rules → PR.REPAYMENT / PR.PRINCIPAL.DECREASE / PR.PAYOFF.",
     related: ["aa2prodline", "aa2product"],
   },
   aa2product: {
@@ -605,7 +605,7 @@ const CONCEPTS = {
     example: "Setting the Interest component to 4.5% fixed and the Term to 36 months defines the product.",
     why: "Product conditions are exactly what make one product different from another.",
     memory: "Same components, different conditions = different products.",
-    temenos: "Values assigned to business-component fields at product level; determine the differences between products.",
+    temenos: "Values assigned to business-component fields at product level; determine the differences between products. Example: BB.TERM.LOANS.BR.ANNUITY (\"Base Rate Linked + Annuity\", Status Published) carries 27 Cat Properties (Principal Interest, Penalty Interest, Schedule, Overdue Ageing Rules, Pricing Grid, Charge-Off, Covenants…) plus Available / Last Published dates. In View mode you see the property list; drilling into a property's actual values needs input rights.",
     related: ["aa2buscomp", "aa2prodvsarr"],
   },
   aa2prodvsarr: {
@@ -623,7 +623,7 @@ const CONCEPTS = {
     example: "Navigate Lending → Personal Loans → Personal Loan, then click 'New Arrangement'.",
     why: "One catalog makes finding and selling products easy.",
     memory: "Catalog = the shop window for products.",
-    temenos: "Navigate line → group → product; the New Arrangement icon starts the sale (Simulate is also available).",
+    temenos: "Model Bank path: User Menu → Business Banking Operations → Product Catalog, then drill line → group → product (e.g. Lending → Base Rate Linked → Annuity/Bullet/Straight Line). The New Arrangement icon starts the sale; Simulate is also available.",
     related: ["aa2prodvsarr", "aa2create"],
   },
 
@@ -727,7 +727,7 @@ const CONCEPTS = {
     example: "The Authorised tab lists a customer's live loans; statuses show Not Disbursed, Current, Dormant, Delinquent.",
     why: "You need to find and open any loan quickly.",
     memory: "Find Loan tabs: Authorised · Unauthorised · Pending · New Offers.",
-    temenos: "Filter by Owner/Arrangement/Product/Currency/Status; results show each arrangement's status.",
+    temenos: "Filter by Owner/Arrangement/Product/Currency/Status; results show each arrangement's status. To list real internal loans, search AA.ARRANGEMENT on the Live File filtered by Product Line = LENDING. Note: the 'Find Pricing Arrangements' / AA.FIND.ARRANGEMENT.AX enquiry returns External Products (insurance, cards) only — not internal AA loans.",
     related: ["aa2authorise", "aa2ovbasic"],
   },
   aa2ovbasic: {
@@ -867,7 +867,7 @@ const CONCEPTS = {
     example: "Grace after 1 day, Delinquent after 5 (chaser every 2 weeks), Non-Accrual after 60 (income suspended).",
     why: "Banks must track non-performing loans and stop booking income they may not receive.",
     memory: "GRC → DEL → NAB = Grace → Delinquent → Non-Accrual.",
-    temenos: "Statuses are user-defined via EB.LOOKUP against AA.OVERDUE.STATUS; in NAB, interest posts to a suspense account, not P&L.",
+    temenos: "Statuses are user-defined via EB.LOOKUP against AA.OVERDUE.STATUS; in NAB, interest posts to a suspense account, not P&L. The setup lives in AA.PRD.DES.OVERDUE — records such as BB.DAYS.WITH.TOLERANCE (\"Ageing by Days with Tolerance\") or BILLS.WITH.TOLERANCE (\"Ageing by Bills\"); each names which bill types are aged (INSTALLMENT, ACT.CHARGE, PAYMENT).",
     related: ["aa3charges", "aa3suspend"], diagram: "aa3overdueflow",
   },
   aa3commitment: {
@@ -1436,7 +1436,7 @@ const CONCEPTS = {
     example: "The PRINCIPAL property shows Committed, Available and Outstanding; PENALTYINT shows Due, Overdue 30/60/90 days and Non Accrual.",
     why: "Interest and charge calculations, aging and reporting all read specific balances.",
     memory: "One property, many balances — one per state.",
-    temenos: "Balances update through Temenos Transact Accounting; used in financial reporting, interest/charge calculation and periodic restriction.",
+    temenos: "Balances update through Temenos Transact Accounting; used in financial reporting, interest/charge calculation and periodic restriction. Live balances are held in EB.CONTRACT.BALANCES, keyed by contract id (e.g. 100109.0008100.01), each row a balance type with a date suffix — for a LIMIT contract you see UTIL / LINE / UTILBL / LINEBL (utilisation, line, and their blocked variants) with a value date and maturity date.",
     related: ["cb2baltype", "cb2balprefix", "aa2accrued"],
   },
   cb2baltype: {
@@ -2330,11 +2330,11 @@ const CONCEPTS = {
   fieldhelp: {
     title: "Field Help & Technical Names",
     simple: "Every field can tell you its underlying table, its technical field name and the data model behind it.",
-    example: "On the Customer screen you check a field's help and see it writes to CUSTOMER, field SECTOR — useful when building an enquiry or a mapping.",
+    example: "The ⓘ info icon on the 'Search Customers' screen shows Title: Search Customers, Enquiry: SSI.YMB.EN.TE.CUSTOMERS.SEARCH, Command: ENQ SSI.YMB.EN.TE.CUSTOMERS.SEARCH — the real name and the exact command to run it.",
     why: "Business labels differ from the technical names you need for enquiries, DFE mappings, APIs and support tickets.",
-    how: "Use the field's help / info action to reveal: the application (table) it belongs to, the technical field name, the field number, and the model/data type. The command line and enquiry designer use those technical names, not the on-screen labels.",
-    memory: "Label is for people; the help shows the name the system uses.",
-    temenos: "Technical names come from STANDARD.SELECTION for the application; enquiries, versions and the API all reference them.",
+    how: "The screen/enquiry ⓘ info action reveals its Title, technical name (enquiry / version / application) and the Command to reach it directly. Field-level help reveals the field's application (table), technical field name, field number and data type. The command line and enquiry designer use those technical names, not the on-screen labels.",
+    memory: "Label is for people; the ⓘ info shows the name and command the system uses.",
+    temenos: "Field technical names come from STANDARD.SELECTION for the application; the ⓘ popup gives the enquiry/version name and its ENQ/command string; enquiries, versions and the API all reference them.",
     related: ["menufields", "enqcommand", "t24command"],
   },
   enqcommand: {
@@ -2641,7 +2641,7 @@ const LABS = [
       { do: "Open the Single Group View (SGV) for the group.", expect: "360° view — members, meeting details, available limit, member transfers." },
     ],
     verify: "The group is authorised and appears in the SGV with its members.",
-    note: "Applying a Credit Block to a member sets the BLOCKED field on that customer.",
+    note: "Applying a Credit Block to a member sets the BLOCKED field on that customer. Verified environment: the Financial Inclusion module (this GROUP app, dividends, payment obligations) runs on the FI Transact build, not the classic Model Bank — the classic build only has 'Customer Group' hierarchy, which is a different thing.",
     related: ["creategroup", "grouptype", "grouplimits", "centre", "grouplending", "groupenq"],
   },
   {
@@ -2658,6 +2658,7 @@ const LABS = [
       { do: "Credit the account with an incoming payment, then run COB (or wait for the obligation's next run date).", expect: "At COB the funds are split per the obligation; a split to an inactive obligation is skipped." },
     ],
     verify: "After COB the incoming payment has been divided per your split — check the obligation balances.",
+    note: "FI module only — EB.ALERT.REQUEST, EM.PS.OBLIGATION.INPUT and EM.PS.PAYMENT.SPLIT are not in the classic Model Bank; run this on the FI Transact build.",
     related: ["psos", "paymentsource", "paymentobligation", "paymentsplit", "psprocessing"],
   },
   {
@@ -2673,6 +2674,7 @@ const LABS = [
       { do: "If correct, run in Post mode.", expect: "Dividends posted to accounts and a note issued to each member." },
     ],
     verify: "EM.DIVIDEND.RUN.DETAILS shows the posted dividends and account balances have increased.",
+    note: "FI module only — EM.DIVIDEND.RUN is not in the classic Model Bank; run this on the FI Transact build.",
     related: ["dividend", "divrunner", "divformula", "divminbal", "divconfig"],
   },
   {
@@ -2687,6 +2689,7 @@ const LABS = [
       { do: "Authorise the bulk change.", expect: "The SG.BA.CHANGE.DAO service auto-starts and reassigns the portfolios." },
     ],
     verify: "The selected customers now show the new Account Officer.",
+    note: "FI module only — SG.BA.CHANGE.DAO and the FI File Upload path are not in the classic Model Bank; run this on the FI Transact build.",
     related: ["dfe", "fileuploadproc", "fileuploadtables", "bulkao"],
   },
 ];
@@ -2776,7 +2779,7 @@ const SLIDE_IMG = {
   // Instructor Training — Day 1 (real screenshots from the training environment)
   usermaint: "users", usersmsgroup: "smsgroup", spf: "spf",
   enqcommand: "enquiry", custindivnonindiv: "custnonindiv", menufields: "custindiv",
-  recordlock: "recordlock", t24command: "command",
+  recordlock: "recordlock", t24command: "command", fieldhelp: "fieldhelp",
   companybranch: "welcome", abbrevgroup: "abbrevacc",
   aa2recordstatus: "aa2recordstatus",
 };
