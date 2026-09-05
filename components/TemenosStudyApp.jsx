@@ -3555,7 +3555,7 @@ function Ring({ pct, size = 64 }) {
   return (
     <svg width={size} height={size} className="-rotate-90">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#4f46e5" strokeWidth="6"
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#212a76" strokeWidth="6"
         strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} strokeLinecap="round"
         className="transition-all duration-700" />
     </svg>
