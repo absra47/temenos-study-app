@@ -3545,7 +3545,7 @@ function BackButton({ label, onClick }) {
 function Bar({ pct }) {
   return (
     <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-      <div className="h-full rounded-full bg-teal-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+      <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -3555,7 +3555,7 @@ function Ring({ pct, size = 64 }) {
   return (
     <svg width={size} height={size} className="-rotate-90">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#0d9488" strokeWidth="6"
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#4f46e5" strokeWidth="6"
         strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} strokeLinecap="round"
         className="transition-all duration-700" />
     </svg>
@@ -3748,8 +3748,8 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
       <button onClick={toggle}
         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
           status === "idle"
-            ? "border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-800"
-            : "border-teal-300 bg-teal-50 text-teal-800"}`}
+            ? "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-800"
+            : "border-indigo-300 bg-indigo-50 text-indigo-800"}`}
         aria-label={btnLabel}>
         {status === "playing" ? <Pause size={14} /> : status === "paused" ? <Play size={14} /> : <Volume2 size={14} />}
         {btnLabel}
@@ -3772,7 +3772,7 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
           <div className="mb-2 inline-flex rounded-lg border border-slate-200 p-0.5">
             {[["device", "Device"], ["natural", "Natural ★"]].map(([id, lbl]) => (
               <button key={id} onClick={() => { setEngine(id); hardStop(); }}
-                className={`px-2.5 py-1 text-xs rounded-md ${engine === id ? "bg-teal-600 text-white" : "text-slate-600"}`}>
+                className={`px-2.5 py-1 text-xs rounded-md ${engine === id ? "bg-indigo-600 text-white" : "text-slate-600"}`}>
                 {lbl}
               </button>
             ))}
@@ -3815,7 +3815,7 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
 
 // ---- the 5-step ladder + concept view -------------------------------------
 const STEP_META = [
-  { icon: Target, label: "Concept", field: "title", accent: "text-teal-700" },
+  { icon: Target, label: "Concept", field: "title", accent: "text-indigo-700" },
   { icon: Brain, label: "Simple meaning", field: "simple" },
   { icon: Globe, label: "Real-world example", field: "example" },
   { icon: HelpCircle, label: "Why it matters", field: "why" },
@@ -3861,7 +3861,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
         <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
           {modes.map(m => (
             <button key={m.id} onClick={() => setMode(m.id)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${mode === m.id ? "bg-teal-600 text-white" : "text-slate-600 hover:text-slate-900"}`}>
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${mode === m.id ? "bg-indigo-600 text-white" : "text-slate-600 hover:text-slate-900"}`}>
               {m.label}
             </button>
           ))}
@@ -3887,14 +3887,14 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
             return (
               <li key={i} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 text-sm font-semibold ring-1 ring-teal-100">{i + 1}</div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 text-sm font-semibold ring-1 ring-indigo-100">{i + 1}</div>
                   {i < 4 && <div className="w-px flex-1 bg-slate-200 my-1" />}
                 </div>
                 <div className="pb-2">
                   <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
                     <Icon size={13} /> {s.label}
                   </div>
-                  <p className={`mt-1 text-sm leading-relaxed ${i === 0 ? "font-semibold text-teal-800" : "text-slate-700"}`}>{val}</p>
+                  <p className={`mt-1 text-sm leading-relaxed ${i === 0 ? "font-semibold text-indigo-800" : "text-slate-700"}`}>{val}</p>
                 </div>
               </li>
             );
@@ -3933,14 +3933,14 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
 
       {c.diagram && (
         <button onClick={() => onOpen({ view: "diagram", diagramId: c.diagram })}
-          className="mt-4 inline-flex items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900">
+          className="mt-4 inline-flex items-center gap-1.5 text-sm text-indigo-700 hover:text-indigo-900">
           <GitBranch size={15} /> View diagram: {DIAGRAMS[c.diagram].title} <ChevronRight size={14} />
         </button>
       )}
 
       {LABS.filter(l => l.related?.includes(conceptId)).map(l => (
         <button key={l.id} onClick={() => onOpen({ view: "lab", labId: l.id })}
-          className="mt-4 flex w-full items-center gap-1.5 text-sm text-teal-700 hover:text-teal-900">
+          className="mt-4 flex w-full items-center gap-1.5 text-sm text-indigo-700 hover:text-indigo-900">
           <Wrench size={15} /> Practice in sandbox: {l.title} <ChevronRight size={14} />
         </button>
       ))}
@@ -3951,7 +3951,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           <div className="flex flex-wrap gap-2">
             {c.related.filter(r => CONCEPTS[r]).map(r => (
               <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-teal-300 hover:text-teal-800 transition-colors">
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
                 {CONCEPTS[r].title} <ArrowRight size={12} />
               </button>
             ))}
@@ -3961,7 +3961,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
 
       <div className="mt-8 flex items-center gap-3">
         <button onClick={onDone}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isRead ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-teal-600 text-white hover:bg-teal-700"}`}>
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isRead ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}>
           {isRead ? <><CheckCircle2 size={16} /> Marked as read</> : <><Check size={16} /> Mark as read</>}
         </button>
       </div>
@@ -3974,16 +3974,16 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           <div className="mt-6 flex items-stretch gap-3 border-t border-slate-200 pt-4">
             {prev ? (
               <button onClick={() => onOpen({ view: "concept", conceptId: prev })}
-                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-teal-300 transition-colors">
+                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
                 <div className="flex items-center gap-1 text-xs text-slate-400"><ArrowLeft size={12} /> Previous</div>
-                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-teal-800 line-clamp-1">{CONCEPTS[prev].title}</div>
+                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{CONCEPTS[prev].title}</div>
               </button>
             ) : <div className="flex-1" />}
             {next ? (
               <button onClick={() => onOpen({ view: "concept", conceptId: next })}
-                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-teal-300 transition-colors">
+                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-indigo-300 transition-colors">
                 <div className="flex items-center justify-end gap-1 text-xs text-slate-400">Next <ArrowRight size={12} /></div>
-                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-teal-800 line-clamp-1">{CONCEPTS[next].title}</div>
+                <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{CONCEPTS[next].title}</div>
               </button>
             ) : <div className="flex-1" />}
           </div>
@@ -4035,9 +4035,9 @@ function QuizRunner({ title, questions, onFinish }) {
         </div>
         <div className="mt-5 space-y-2">
           {answers.map((a, idx) => (
-            <div key={idx} className={`rounded-lg border p-3 text-sm ${a.correct ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
+            <div key={idx} className={`rounded-lg border p-3 text-sm ${a.correct ? "border-blue-200 bg-blue-50" : "border-rose-200 bg-rose-50"}`}>
               <div className="flex items-start gap-2">
-                {a.correct ? <CheckCircle2 size={16} className="text-emerald-600 mt-0.5 shrink-0" /> : <X size={16} className="text-rose-600 mt-0.5 shrink-0" />}
+                {a.correct ? <CheckCircle2 size={16} className="text-blue-600 mt-0.5 shrink-0" /> : <X size={16} className="text-rose-600 mt-0.5 shrink-0" />}
                 <div>
                   <div className="font-medium text-slate-800">{questions[idx].question}</div>
                   {!a.correct && <div className="text-slate-600 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
@@ -4048,7 +4048,7 @@ function QuizRunner({ title, questions, onFinish }) {
           ))}
         </div>
         <button onClick={() => onFinish(pct, correct, questions.length)}
-          className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">
+          className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
           Done <Check size={16} />
         </button>
       </div>
@@ -4069,7 +4069,7 @@ function QuizRunner({ title, questions, onFinish }) {
           const reveal = picked !== null;
           const isAns = oi === cur.answer;
           let cls = "border-slate-200 bg-white hover:border-slate-300";
-          if (reveal && isAns) cls = "border-emerald-300 bg-emerald-50";
+          if (reveal && isAns) cls = "border-blue-300 bg-blue-50";
           else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50";
           return (
             <button key={oi} disabled={reveal} onClick={() => setPicked(oi)}
@@ -4081,7 +4081,7 @@ function QuizRunner({ title, questions, onFinish }) {
       </div>
       {picked !== null && (
         <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm">
-          <div className={`font-medium ${picked === cur.answer ? "text-emerald-700" : "text-rose-700"}`}>
+          <div className={`font-medium ${picked === cur.answer ? "text-blue-700" : "text-rose-700"}`}>
             {picked === cur.answer ? "Correct" : "Not quite"}
           </div>
           <p className="mt-1 text-slate-600">{withMono(cur.explanation)}</p>
@@ -4133,7 +4133,7 @@ function Flashcards({ pool, flash, setFlash, title }) {
           <>
             <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Answer</div>
             <div className="text-slate-800 leading-relaxed">{c.simple}</div>
-            <div className="mt-3 text-sm text-teal-800 bg-teal-50 rounded-lg px-3 py-2">{c.memory}</div>
+            <div className="mt-3 text-sm text-indigo-800 bg-indigo-50 rounded-lg px-3 py-2">{c.memory}</div>
           </>
         )}
       </button>
@@ -4145,7 +4145,7 @@ function Flashcards({ pool, flash, setFlash, title }) {
             <RotateCcw size={14} /> Need review
           </button>
           <button onClick={() => mark("known")}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "known" ? "bg-emerald-100 text-emerald-800" : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50"}`}>
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "known" ? "bg-blue-100 text-blue-800" : "bg-white border border-slate-200 text-slate-600 hover:bg-blue-50"}`}>
             <Check size={14} /> Known
           </button>
         </div>
@@ -4183,7 +4183,7 @@ function DiagramFlow({ id }) {
           <div key={i}>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 text-sm font-semibold">{i + 1}</div>
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 text-sm font-semibold">{i + 1}</div>
                 <div className="flex-1">
                   <div className="font-medium text-slate-900">{s.label}</div>
                   {s.sub && <div className="text-sm text-slate-500">{s.sub}</div>}
@@ -4213,8 +4213,8 @@ function LabsList({ go }) {
           <div className="grid grid-cols-2 gap-3">
             {LABS.filter(l => l.courseId === c.id).map(l => (
               <button key={l.id} onClick={() => go({ view: "lab", labId: l.id })}
-                className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-teal-300 transition-colors">
-                <Wrench size={18} className="text-teal-600" />
+                className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+                <Wrench size={18} className="text-indigo-600" />
                 <div className="mt-2 font-medium text-slate-900">{l.title}</div>
                 <div className="text-sm text-slate-500 line-clamp-2">{l.goal}</div>
               </button>
@@ -4254,7 +4254,7 @@ function LabView({ id, onOpen }) {
         {l.steps.map((s, i) => (
           <li key={i} className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 text-sm font-semibold ring-1 ring-teal-100">{i + 1}</div>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 text-sm font-semibold ring-1 ring-indigo-100">{i + 1}</div>
               {i < l.steps.length - 1 && <div className="w-px flex-1 bg-slate-200 my-1" />}
             </div>
             <div className="pb-1">
@@ -4270,9 +4270,9 @@ function LabView({ id, onOpen }) {
       </ol>
 
       {l.verify && (
-        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-600 mb-1.5"><Check size={13} /> Done when</div>
-          <p className="text-sm leading-relaxed text-emerald-900">{withMono(l.verify)}</p>
+        <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-blue-600 mb-1.5"><Check size={13} /> Done when</div>
+          <p className="text-sm leading-relaxed text-blue-900">{withMono(l.verify)}</p>
         </div>
       )}
       {l.note && (
@@ -4288,7 +4288,7 @@ function LabView({ id, onOpen }) {
           <div className="flex flex-wrap gap-2">
             {l.related.filter(r => CONCEPTS[r]).map(r => (
               <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-teal-300 hover:text-teal-800 transition-colors">
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
                 {CONCEPTS[r].title} <ArrowRight size={12} />
               </button>
             ))}
@@ -4349,14 +4349,14 @@ export default function App() {
         <div className="mx-auto max-w-5xl px-4 py-3">
           <div className="flex items-center gap-3">
             <button onClick={() => go({ view: "dashboard" })} className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-600 text-white"><GraduationCap size={16} /></div>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white"><GraduationCap size={16} /></div>
               <span className="font-semibold tracking-tight">Temenos Study</span>
             </button>
             <div className="ml-auto relative w-56">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={query} onChange={e => { setQuery(e.target.value); if (e.target.value) go({ view: "search" }); }}
                 placeholder="Search…"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-teal-400 focus:bg-white" />
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-white" />
             </div>
           </div>
           <nav className="mt-3 flex flex-wrap items-center gap-1">
@@ -4368,7 +4368,7 @@ export default function App() {
                 || (n.id === "labs" && nav.view === "lab");
               return (
                 <button key={n.id} onClick={() => go({ view: n.id })}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-teal-50 text-teal-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-indigo-50 text-indigo-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
                   <Icon size={15} /> {n.label}
                 </button>
               );
@@ -4436,8 +4436,8 @@ export default function App() {
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {Object.entries(DIAGRAMS).map(([k, d]) => (
                   <button key={k} onClick={() => go({ view: "diagram", diagramId: k })}
-                    className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-teal-300 transition-colors">
-                    <GitBranch size={18} className="text-teal-600" />
+                    className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+                    <GitBranch size={18} className="text-indigo-600" />
                     <div className="mt-2 font-medium text-slate-900">{d.title}</div>
                     <div className="text-sm text-slate-500 line-clamp-2">{d.caption}</div>
                   </button>
@@ -4469,14 +4469,14 @@ export default function App() {
                   {searchResults.length === 0 && <p className="text-slate-500">Nothing found for "{query}".</p>}
                   {searchResults.map((r, i) => r.type === "concept" ? (
                     <button key={i} onClick={() => go({ view: "concept", conceptId: r.id })}
-                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-teal-300">
+                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300">
                       <div className="text-xs text-slate-400">Concept · {COURSES.find(c => c.id === conceptCourse[r.id])?.title}</div>
                       <div className="font-medium text-slate-900">{CONCEPTS[r.id].title}</div>
                       <div className="text-sm text-slate-500 line-clamp-1">{CONCEPTS[r.id].simple}</div>
                     </button>
                   ) : (
                     <button key={i} onClick={() => go({ view: "course", courseId: r.id })}
-                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-teal-300">
+                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300">
                       <div className="text-xs text-slate-400">Course</div>
                       <div className="font-medium text-slate-900">{COURSES.find(c => c.id === r.id).title}</div>
                     </button>
@@ -4516,7 +4516,7 @@ function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, 
           </div>
           {nextConcept && (
             <button onClick={() => go({ view: "concept", conceptId: nextConcept })}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
               Continue <ArrowRight size={15} />
             </button>
           )}
@@ -4551,7 +4551,7 @@ function CourseCard({ course, pct, go }) {
   const quizCount = course.sections.length;
   return (
     <button onClick={() => go({ view: "course", courseId: course.id })}
-      className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-teal-300 transition-colors">
+      className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
       <div className="flex items-center justify-between">
         <Mono>{course.code}</Mono>
         <span className="text-xs text-slate-400">{pct}%</span>
@@ -4591,7 +4591,7 @@ function CourseView({ course, isRead, coursePct, progress, go }) {
           const quizScore = progress.quiz[s.id]?.pct;
           return (
             <button key={s.id} onClick={() => go({ view: "section", courseId: course.id, sectionId: s.id })}
-              className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-teal-300 transition-colors">
+              className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 text-sm font-medium">{i + 1}</div>
                 <div className="flex-1 min-w-0">
@@ -4600,7 +4600,7 @@ function CourseView({ course, isRead, coursePct, progress, go }) {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-xs text-slate-400">{done}/{s.concepts.length} concepts</div>
-                  {quizScore !== undefined && <div className="text-xs text-teal-700 font-medium">Quiz {quizScore}%</div>}
+                  {quizScore !== undefined && <div className="text-xs text-indigo-700 font-medium">Quiz {quizScore}%</div>}
                 </div>
                 <ChevronRight size={16} className="text-slate-300" />
               </div>
@@ -4611,9 +4611,9 @@ function CourseView({ course, isRead, coursePct, progress, go }) {
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 font-medium text-slate-900"><Award size={18} className="text-teal-600" /> End-of-course assessment</div>
+          <div className="flex items-center gap-2 font-medium text-slate-900"><Award size={18} className="text-indigo-600" /> End-of-course assessment</div>
           <div className="text-sm text-slate-500 mt-0.5">{course.assessment.length} questions across knowledge, understanding and application.
-            {progress.assess[course.id] && <span className="text-teal-700 font-medium"> Last: {progress.assess[course.id].pct}%</span>}
+            {progress.assess[course.id] && <span className="text-indigo-700 font-medium"> Last: {progress.assess[course.id].pct}%</span>}
           </div>
         </div>
         <button onClick={() => go({ view: "assessment", courseId: course.id })}
@@ -4637,8 +4637,8 @@ function SectionView({ nav, isRead, progress, go }) {
       <div className="space-y-2">
         {section.concepts.map(id => (
           <button key={id} onClick={() => go({ view: "concept", conceptId: id })}
-            className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-teal-300 transition-colors">
-            {isRead(id) ? <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> : <Circle size={18} className="text-slate-300 shrink-0" />}
+            className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+            {isRead(id) ? <CheckCircle2 size={18} className="text-blue-500 shrink-0" /> : <Circle size={18} className="text-slate-300 shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="font-medium text-slate-900">{CONCEPTS[id].title}</div>
               <div className="text-sm text-slate-500 line-clamp-1">{CONCEPTS[id].simple}</div>
@@ -4650,11 +4650,11 @@ function SectionView({ nav, isRead, progress, go }) {
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 font-medium text-slate-900"><ListChecks size={18} className="text-teal-600" /> Section quiz</div>
-          <div className="text-sm text-slate-500 mt-0.5">{section.quiz.length} questions.{quizScore !== undefined && <span className="text-teal-700 font-medium"> Last: {quizScore}%</span>}</div>
+          <div className="flex items-center gap-2 font-medium text-slate-900"><ListChecks size={18} className="text-indigo-600" /> Section quiz</div>
+          <div className="text-sm text-slate-500 mt-0.5">{section.quiz.length} questions.{quizScore !== undefined && <span className="text-indigo-700 font-medium"> Last: {quizScore}%</span>}</div>
         </div>
         <button onClick={() => go({ view: "quiz", courseId: course.id, sectionId: section.id })}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">Take quiz <ArrowRight size={15} /></button>
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Take quiz <ArrowRight size={15} /></button>
       </div>
     </div>
   );
@@ -4680,7 +4680,7 @@ function FlashcardPicker({ flash, setFlash }) {
 function ScopeBtn({ active, onClick, children }) {
   return (
     <button onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${active ? "bg-teal-600 text-white border-teal-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}>
+      className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}>
       {children}
     </button>
   );
@@ -4713,7 +4713,7 @@ function ProgressView({ overallPct, conceptsLearned, coursePct, progress }) {
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                 <span>{secDone}/{c.sections.length} sections complete</span>
                 <span>{c.sections.filter(s => progress.quiz[s.id] !== undefined).length}/{c.sections.length} quizzes taken</span>
-                {assess !== undefined && <span className="text-teal-700 font-medium">Assessment {assess}%</span>}
+                {assess !== undefined && <span className="text-indigo-700 font-medium">Assessment {assess}%</span>}
               </div>
             </div>
           );
