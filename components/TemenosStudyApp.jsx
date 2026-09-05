@@ -716,7 +716,7 @@ const CONCEPTS = {
     how: "IHLD = a draft, not yet submitted to the validation queue. INAO = submitted but blocked on an unaccepted override. INAU = fully committed by the operator, now waiting on a second user (supervisor) to authorise. RNAU = a reversal/cancellation of a live record, itself waiting on supervisor sign-off. LIVE = all checks passed, overrides accepted, supervisor authorised — active in production.",
     temenos: "IHLD (Input Held): saved as a draft, not committed — e.g. a part-filled AA arrangement for customer 100343 kept aside to finish later. INAO (Input Authorised - Overrides): commit triggered a policy warning (e.g. 'Maximum discount exceeded') that blocks completion until the override is accepted. INAU (Input Authorised - Needs Authorisation): operator hit commit and got 'Txn Complete' — record AA2507602X98 now sits in the pending queue for a supervisor. RNAU (Reverse Unauthorised): a reversal (R mode) of an existing live record is pending supervisor approval — e.g. undoing a loan created by mistake. LIVE: fully authorised and active — generating schedules, accruing interest, posting to the GL.",
     memory: "Draft (IHLD) → blocked on override (INAO) → committed, needs authorising (INAU) → reversal pending (RNAU) → LIVE.",
-    related: ["aa2overrides", "aa2authorise", "aa2findloan"],
+    related: ["aa2overrides", "aa2authorise", "aa2findloan"], diagram: "aa2statusflow",
   },
 
   // ---- Section 3: Lending Arrangement Overview Enquiries ----
@@ -2359,6 +2359,16 @@ const DIAGRAMS = {
       { label: "Product Group", sub: "client-defined subset", tag: "AA.PRODUCT.GROUP" },
       { label: "Product", sub: "client-defined · product conditions", tag: "AA.PRODUCT" },
       { label: "Arrangement", sub: "product + customer = one instance", tag: "AA.ARRANGEMENT" },
+    ],
+  },
+  aa2statusflow: {
+    title: "Record Status Lifecycle", caption: "From a half-filled draft to a fully live record — each step is a checkpoint. RNAU branches off later, when someone reverses an already-live record.",
+    steps: [
+      { label: "IHLD", sub: "Input Held — saved as a draft, not yet in the validation queue" },
+      { label: "INAO", sub: "Input Authorised, Overrides — blocked on a policy warning until accepted" },
+      { label: "INAU", sub: "Input Authorised, Needs Authorisation — committed, waiting on a supervisor" },
+      { label: "LIVE", sub: "All checks passed, overrides accepted, supervisor authorised — active in production" },
+      { label: "RNAU (branch)", sub: "Someone later reverses this live record — the reversal itself now waits on supervisor sign-off" },
     ],
   },
   aa2createflow: {
