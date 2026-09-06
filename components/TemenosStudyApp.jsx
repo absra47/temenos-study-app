@@ -2419,6 +2419,80 @@ const CONCEPTS = {
     temenos: "Group Class ABBREVIATED vs STANDARD comes from the Group Type; abbreviated members auto-create a Non-Individual CUSTOMER with minimum details; group types seen: YMB.REG.GRP, YMB.SOL.GRP, YMB.NONABR.GRP.",
     related: ["custindivnonindiv", "creategroup", "grouptype", "centre"],
   },
+
+  // ---- Day 2: Accounts the New Way (Arrangement Architecture) ----
+  aaaccount: {
+    title: "Accounts as Arrangements — \"the New Way\"",
+    simple: "In the current release a current/savings account is built as an AA arrangement on the Accounts product line, not as a classic ACCOUNT record keyed straight in.",
+    example: "A 'Yehulu Ordinary Savings' account is a published product; opening one for a customer creates an arrangement (AA…) plus an account id — the same pattern as an AA loan.",
+    why: "One product engine for loans, deposits and accounts means shared components (interest, charges, limits, statements) and controlled, parameter-driven product design.",
+    how: "The account still has an account number and behaves like an account day-to-day, but underneath it is an arrangement made of property classes. Products are designed, proofed and published, then sold from the Product Catalog / Role Based Accounts Page. The old direct-input ACCOUNT application still exists for non-AA accounts (nostro, internal, suspense).",
+    memory: "New way: Account = an arrangement on the Accounts product line, built and published like an AA product.",
+    temenos: "AA Accounts product line; arrangement + account id generated on creation; account-line property classes include ACCOUNT, INTEREST, CHARGE, LIMIT, PAYMENT.SCHEDULE, DORMANCY, CLOSURE; classic ACCOUNT still used for bank/internal accounts. The FI menu item 'Account' is version SSI.YMB.TAB.AC.MAIN; in the Account Application Status enquiry the final origination stage shows as 'Arrangement Creation' — the tell that an account is an arrangement.",
+    related: ["aoapplication", "aa2prodvsarr", "abbrevgroup", "custindivnonindiv"],
+  },
+  aoapplication: {
+    title: "Account Origination (EM.AO.APPLICATION)",
+    simple: "The staged workflow that takes an account application from capture to a live account.",
+    example: "For customer 100082 on product YMPCompSav: Application Input, then Review/Approval (status 201 Approved), then Offer Production (status 701 Generate offer documents), then Arrangement Creation (status 901) — Txn Complete. 'Update Customer' was Not Required in this setup, so it was skipped.",
+    why: "Account opening needs the same controlled, auditable, multi-step flow as lending — capture, check, approve, produce, create.",
+    how: "The full stage set is: Application Input → Review / Approval → Update Customer → Offer Production → Account (Arrangement) Creation. Which stages apply is driven by the Account Origination parameter setup — each stage is Required, Optional, or Not Required per product / scenario, so a given application may run only 3 or 4 of them. Each stage is a tab on the application (Account Input, Interest and Charges, Settlement and Schedule, Eligibility Check, plus the stage's own tab and Audit). Origination is reached from the Single Customer View or the Role Based Accounts Page.",
+    memory: "Input → Review/Approve → (Update Customer) → Offer → Create. Stages configured per Account Origination parameters; status codes 201 / 701 / 901.",
+    temenos: "Application id prefixed AO…, activity id PA…; held in EM.AO.APPLICATION (final commit is version EM.AO.APPLICATION,ACCOUNT.CREATION); stage applicability from the Account Origination parameter record (Required / Optional / Not Required); Account Application Status enquiry shows each stage's Activity Status. Two entry points: the Role Based Accounts Page, or the customer's SCV → Portfolio tab → ⋯ menu → New Account Application (also New Deposit / New Loan Application there). A lean setup runs just Account Input + Online Application + Audit.",
+    related: ["aaaccount", "acctrestriction", "scv", "custrec", "aa2create"], diagram: "aoflow",
+  },
+  acctrestriction: {
+    title: "Account Restrictions & Pending Approvals",
+    simple: "Ways to control an AA account after it's live — freeze posting for a period, and hold changes for a second person to approve.",
+    example: "A disputed account gets a Posting Restriction blocking debits with a reason code until it's resolved; separately, an 'Update Account Details' activity sits in Pending Approval until a supervisor picks Approve / View / Edit / Delete.",
+    why: "Operations must be able to freeze or amend an account without closing it, and every change is still two-person controlled.",
+    how: "Posting Restrictions block debits and/or credits for a start/end date range, each with a block/unblock reason code — run as arrangement activities (<PRODUCTLINE>-START.RESTRICTION-ACCOUNT / END.RESTRICTION-ACCOUNT). Any activity you run on the account (update details, restriction, closure) is an Arrangement Activity (id AAACT…, e.g. AA.ARRANGEMENT.ACTIVITY,AA.DRILL) and, if it needs authorisation, shows in the account overview's Pending Approval list with an Approve / View / Edit / Delete menu.",
+    memory: "Restriction = temporary posting freeze with a reason. Pending Approval = the account's own authorise queue.",
+    temenos: "Block codes via virtual tables BLOCK.REASON.CODES / UNBLOCK.REASON.CODES; multiple restrictions with start/end dates and configurable pre-notice; the New User Activities menu groups every activity by property class — e.g. Balance Maintenance (Adjust Balances/Bills), Dormancy (Set / Reset Dormancy, Change Dormancy Condition), 'Release emergency block', Update Account Details; Limit Details, Facilities and Conditions and Pending Approval all sit on the account Overview.",
+    related: ["lpb1posting", "aaaccount", "acctclosure", "aa2recordstatus"],
+  },
+  acctclosure: {
+    title: "Account Closure",
+    simple: "Closing an AA account: work out the settlement figure by simulation, produce a Closure Statement, choose how to pay the balance out, then perform the closure.",
+    example: "A deceased customer's savings account (AA26062Q2V83): Calculate Payoff with Closure Reason 'Customer Has Passed Away', accept the 'settlement instruction not defined for PAYOFF$CURRENT' override, the simulation runs (Processing → Executed Successfully), the Closure Statement shows 60,000 to settle, choose Settle by Funds Transfer, then Perform Closure.",
+    why: "Closing an account must be exact and auditable — every balance settled, the payout method recorded, and it can be dry-run first.",
+    how: "From the account Overview → Facilities and Conditions → Simulate Closure (dry run) or Perform Closure (Live). Calculate Payoff creates a simulation (id AASIM…) with a Closure Reason and Payoff Date; it may raise overrides. When it executes, the Closure Statement lists the payoff amount itemised by property. Choose Closure Method decides how the balance leaves: Settle by Funds Transfer / Cash Payment / Draft / Official Cheque / Payment Order, or Write-Off to P&L. The live closure then runs the CLOSURE property's activities.",
+    memory: "Calculate Payoff (simulate) → Closure Statement → Choose Closure Method → Perform Closure.",
+    temenos: "Simulation id AASIM…, activity 'Calculate payoff for accounts', Simulation Status Processing → Executed - Successfully; Closure Reason from a lookup (e.g. DECEASED.CUSTOMER); PAYOFF$CURRENT payment type; Simulate vs Perform Closure (Live) on the account Overview; ties to the CLOSURE / CLOSURE Type property classes.",
+    related: ["lpb2closure", "lpb2closuretype", "lpb2payoff", "aaaccount", "acctrestriction"], diagram: "acctclosureflow",
+  },
+
+  // ---- Day 2 (cont.): Teller & Cash Operations ----
+  accountdeposit: {
+    title: "Account Deposit",
+    simple: "Paying money into a customer's account — a simple teller deposit is a cash/transfer transaction; a term deposit runs its own origination process.",
+    example: "A cash deposit to a savings account posts immediately. Opening a fixed/term deposit runs Deposit Origination (EDO.DEPOSIT.ORIGINATION, a workflow process) with its own application-input stage. An account-to-account move can also go through a Payment Order (product ACOTHER - Account Transfer, id PI…).",
+    why: "Deposits are the core inflow; term deposits need the same staged, auditable origination as loans and accounts.",
+    how: "Simple deposit = a cash/transfer transaction against the account. A term deposit is an AA arrangement on the Deposits product line, opened via Customer Operations → Deposit Applications → Create Deposit / Simulate Deposit, or the customer's SCV Portfolio → New Deposit Application. The origination runs as a process (EDO.05.APPLICATION.INPUT…, Process Status RUNNING → complete), activity ids PA….",
+    memory: "Cash in = a transaction; term deposit = an arrangement with its own origination (EDO…).",
+    temenos: "Deposit origination = EDO.DEPOSIT.ORIGINATION run as PW.PROCESS,AUTO; Deposit Simulations tab for Simulate Deposit; Payment Order product ACOTHER for account transfers.",
+    related: ["aaaccount", "aoapplication", "tillvault"],
+  },
+  denomination: {
+    title: "Denomination",
+    simple: "The note-and-coin breakdown recorded for a physical cash transaction, so the drawer's count always reconciles.",
+    example: "A teller paying out 5,000 ETB records 10 × 500 notes. On a Till to Vault Transfer the Cash Paid Denom and Cash Received Denom tabs hold each side's breakdown.",
+    why: "Physical cash must be counted by denomination for the till and the vault to balance.",
+    how: "Attach Denomination sets up the denominations for a currency (from the Head Teller menu). Cash transactions — teller payments and receipts, till-to-vault transfers, vault load — carry Cash Paid Denom / Cash Received Denom sub-tabs where the count per denomination is entered; the totals must equal the transaction amount.",
+    memory: "Denomination = how many of each note/coin — the count behind the amount.",
+    temenos: "Attach Denomination on the Head Teller menu; Cash Paid Denom / Cash Received Denom tabs on cash transactions; totals reconcile against the transaction amount and the till/vault balance.",
+    related: ["tillvault", "accountdeposit"],
+  },
+  tillvault: {
+    title: "Till & Vault Cash Operations",
+    simple: "How physical cash moves between a teller's till, other tills, and the branch vault.",
+    example: "Start of day the Head Teller runs Load Vault; a teller running low gets a Till to Vault Transfer (or Till to Till from a colleague); end of day the teller raises a Till Closure Request and the Head Teller runs Unload Vault.",
+    why: "Every branch note is tracked from vault to till to customer and back, always reconciled by denomination.",
+    how: "From the Head Teller page: New Till (open a drawer), Attach Denomination, Load Vault / Unload Vault (cash in/out of the branch vault), Till to Vault Transfer (id TT…, move cash between a teller and the vault — vault is a special till, e.g. 9999), Till to Till (move cash between two tellers), Till Closure Request (a teller asks to close and hand back). Each carries From/To, Currency, Amount Local / Foreign and denomination detail.",
+    memory: "Vault ↔ Till ↔ Till ↔ Customer — every move by denomination. Load/Unload Vault · Till to Vault · Till to Till.",
+    temenos: "Head Teller / Teller Role Based Home Pages; Till to Vault Transfer id TT…; the vault is a special till (e.g. 9999); Currency Exchange Rates (Mid/Buy/Sell) on the Head Teller dashboard; Till Closure Request → Head Teller approval.",
+    related: ["denomination", "accountdeposit"],
+  },
 };
 
 const DIAGRAMS = {
@@ -2485,6 +2559,27 @@ const DIAGRAMS = {
       { label: "Branch", sub: "e.g. 3000–3999, parent level = its Province" },
       { label: "Department", sub: "e.g. 4000–4999, parent level = its Branch" },
       { label: "T24 Users / General Staff", sub: "e.g. 5000–6999 — individual officer codes, parent level = their Department" },
+    ],
+  },
+  aoflow: {
+    title: "Account Origination Flow", caption: "EM.AO.APPLICATION runs an account from capture to creation; each stage is Required, Optional or Not Required per the Account Origination parameters.",
+    steps: [
+      { label: "Application Input", sub: "capture the request — from the SCV or Role Based Accounts Page", tag: "EM.AO.APPLICATION" },
+      { label: "Review / Approval", sub: "a second party checks and approves — status 201 Approved" },
+      { label: "Update Customer", sub: "(optional / not-required stage) top up the customer record" },
+      { label: "Offer Production", sub: "produce offer documents — status 701" },
+      { label: "Arrangement Creation", sub: "the live account (arrangement + account id) is created — status 901" },
+    ],
+  },
+  acctclosureflow: {
+    title: "Account Closure Flow", caption: "Closing an AA account — dry-run the figure, produce the statement, settle the balance, then close it for real.",
+    steps: [
+      { label: "Calculate Payoff", sub: "simulation (id AASIM…) — set Closure Reason + Payoff Date", tag: "PAYOFF$CURRENT" },
+      { label: "Accept overrides", sub: "e.g. 'settlement instruction not defined for PAYOFF$CURRENT'" },
+      { label: "Simulation executes", sub: "Simulation Status: Processing → Executed - Successfully" },
+      { label: "Closure Statement", sub: "the payoff amount, itemised by property" },
+      { label: "Choose Closure Method", sub: "Funds Transfer · Cash · Draft · Official Cheque · Payment Order · Write-Off to P&L" },
+      { label: "Perform Closure (Live)", sub: "from the account Overview → Facilities and Conditions" },
     ],
   },
   aa2statusflow: {
@@ -2781,6 +2876,8 @@ const SLIDE_IMG = {
   enqcommand: "enquiry", custindivnonindiv: "custnonindiv", menufields: "custindiv",
   recordlock: "recordlock", t24command: "command", fieldhelp: "fieldhelp",
   companybranch: "welcome", abbrevgroup: "abbrevacc",
+  aaaccount: "aaaccount", aoapplication: "aoapplication", acctrestriction: "acctrestriction",
+  acctclosure: "acctclosure", accountdeposit: "deposit", denomination: "denom", tillvault: "tellermenu",
   aa2recordstatus: "aa2recordstatus",
 };
 const slideImgSrc = (conceptId) => {
@@ -3622,8 +3719,8 @@ const COURSES = [
   {
     id: "training1",
     code: "TRAINING · DAY 1",
-    title: "Instructor Training — Day 1",
-    description: "Notes from the classroom sessions: navigation and commands, security and multi-company access, and the customer/account basics. Screenshots added from the training environment.",
+    title: "Instructor Training — Days 1–2",
+    description: "Notes from the classroom sessions: navigation and commands, security and multi-company access, customer/account basics, accounts as arrangements and their origination / restriction / closure, and teller & cash operations. Screenshots from the training environment.",
     sections: [
       {
         id: "training1-1", title: "Navigation & Commands",
@@ -3672,9 +3769,44 @@ const COURSES = [
           q("The Customer ID is…", ["alphabetic", "a 7–10 digit number, can be auto-generated", "the mnemonic", "the company code"], 1, "Numeric; the mnemonic→ID link lives in MNEMONIC.CUSTOMER."),
         ],
       },
+      {
+        id: "training1-4", title: "Accounts the New Way — Arrangement Architecture",
+        description: "Day 2: current/savings accounts built as AA arrangements, the account origination workflow, restrictions, and closure.",
+        concepts: ["aaaccount", "aoapplication", "acctrestriction", "acctclosure"],
+        quiz: [
+          q("In the current release, a current/savings account is…", ["always a classic ACCOUNT record", "an AA arrangement on the Accounts product line", "a customer group", "a limit"], 1, "Built, proofed and published like an AA product; classic ACCOUNT stays for bank/internal accounts."),
+          q("Opening an AA account for a customer creates…", ["only an account number", "an arrangement (AA…) plus an account id", "a loan", "a new customer"], 1, "Same pattern as an AA loan; the account Overview shows both."),
+          q("The account origination application is held in…", ["ACCOUNT", "EM.AO.APPLICATION", "AA.PRODUCT", "CUSTOMER"], 1, "Application id prefixed AO…"),
+          q("The full origination stage set is…", ["Input → Authorise only", "Application Input → Review/Approval → Update Customer → Offer Production → Arrangement Creation", "Design → Proof → Publish", "Grace → Delinquent → Non-Accrual"], 1, "Not every stage runs — applicability is per the Account Origination parameters."),
+          q("Which stages apply is decided by…", ["the customer", "the Account Origination parameter setup (Required / Optional / Not Required)", "COB", "the branch"], 1, "e.g. 'Update Customer' can be Not Required and skipped."),
+          q("You can start a new account application from…", ["the command line only", "the Role Based Accounts Page, or the customer's SCV Portfolio → ⋯ → New Account Application", "the Product Catalog", "USER.SMS.GROUP"], 1, "Two entry points."),
+          q("A Posting Restriction on an account…", ["closes it", "blocks debits and/or credits for a date range with a reason code", "changes the interest rate", "deletes pending activities"], 1, "Block/unblock reason codes via virtual tables; run as an arrangement activity."),
+          q("An activity awaiting a second person shows on the account Overview in…", ["Recent Transactions", "the Pending Approval list (Approve / View / Edit / Delete)", "Balances", "Beneficiary Details"], 1, "The account's own two-person-control queue."),
+          q("Account closure starts by…", ["deleting the account", "Calculate Payoff — a simulation (AASIM…) that produces the Closure Statement", "writing off to P&L immediately", "reversing the arrangement"], 1, "You can Simulate Closure (dry run) or Perform Closure (Live)."),
+          q("The Closure Statement shows…", ["only the account number", "the payoff amount, itemised by property", "the interest rate", "the customer's KYC"], 1, "e.g. 60,000 under the Account property."),
+          q("Choose Closure Method options include…", ["only cash", "Funds Transfer / Cash / Draft / Official Cheque / Payment Order / Write-Off to P&L", "Design / Proof / Publish", "GRC / DEL / NAB"], 1, "How the remaining balance is settled."),
+          q("A closure with no settlement instruction for PAYOFF$CURRENT…", ["fails permanently", "raises an override you must accept", "closes silently", "creates a new account"], 1, "Overrides are the checkpoint."),
+        ],
+      },
+      {
+        id: "training1-5", title: "Teller & Cash Operations",
+        description: "Day 2: account deposits, denomination, and moving physical cash between tills and the vault.",
+        concepts: ["accountdeposit", "denomination", "tillvault"],
+        quiz: [
+          q("A simple cash deposit to a savings account is…", ["a term-deposit arrangement", "a cash/transfer transaction against the account", "a Payment Order only", "a till closure"], 1, "It posts immediately."),
+          q("Opening a term/fixed deposit runs…", ["nothing special", "its own origination process (EDO.DEPOSIT.ORIGINATION)", "account closure", "a till-to-vault transfer"], 1, "A workflow process with an application-input stage; it's an arrangement on the Deposits product line."),
+          q("Denomination on a cash transaction is…", ["the exchange rate", "the count of each note/coin, which must total the amount", "the account number", "the teller's name"], 1, "Cash Paid Denom / Cash Received Denom tabs."),
+          q("The branch vault is…", ["a customer account", "a special till (e.g. 9999)", "a product", "an enquiry"], 1, "Cash moves between tills and the vault."),
+          q("Moving cash from one teller to another is a…", ["Till to Vault Transfer", "Till to Till transfer", "Vault Load", "Till Closure Request"], 1, "Till to Vault moves cash between a teller and the vault; Load/Unload Vault moves it in/out of the branch."),
+          q("At end of day a teller closes their drawer by…", ["deleting the till", "raising a Till Closure Request for the Head Teller", "a Payment Order", "unloading the vault themselves"], 1, "The Head Teller then approves and does Unload Vault."),
+        ],
+      },
     ],
     assessment: [
       q("S CUSTOMER 100343 does what?", ["creates customer 100343", "opens customer 100343 read-only", "deletes it", "authorises it"], 1, "S = See (view) mode."),
+      q("Moving physical cash between a teller and the branch vault is a…", ["Payment Order", "Till to Vault Transfer (the vault is a special till)", "deposit origination", "account closure"], 1, "Reconciled by denomination."),
+      q("In the current release an AA account is…", ["a classic ACCOUNT keyed directly", "an arrangement on the Accounts product line", "a type of customer", "a limit product"], 1, "One product engine for loans, deposits and accounts."),
+      q("Account origination runs through EM.AO.APPLICATION with stages…", ["fixed and always all required", "Input → Review/Approval → Update Customer → Offer → Creation, each Required/Optional/Not Required", "just Input and Authorise", "Design → Proof → Publish"], 1, "Stage applicability from the Account Origination parameters."),
       q("To start a new record you use function…", ["S", "I (Input)", "A", "L"], 1, "I = Input for create/amend."),
       q("Field help reveals…", ["the menu path", "the underlying table and technical field name", "the user's rights", "the COB time"], 1, "Needed for enquiries, mappings and APIs."),
       q("Enquiries are run with…", ["RUN", "ENQ <name>", "S <name>", "P <name>"], 1, "Then optional selection on technical field names."),
