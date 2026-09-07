@@ -6,8 +6,9 @@ import {
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
-  Volume2, Square, Pause, Play
+  Volume2, Square, Pause, Play, ClipboardList
 } from "lucide-react";
+import { UAT_MODULES } from "./uatData";
 
 /* ============================================================================
    TEMENOS STUDY APP — one app, all courses. Slide-depth content.
@@ -4523,6 +4524,139 @@ function DiagramFlow({ id }) {
 }
 
 // ---- Sandbox drills ------------------------------------------------------
+// ---- UAT test script viewer -------------------------------------------
+const uatTotal = UAT_MODULES.reduce((n, m) => n + m.cases.length, 0);
+const uatModShort = (m) => m.title.replace(/^Module\s*\d+\s*[-–]\s*/, "");
+const uatFindCase = (id) => {
+  for (const m of UAT_MODULES) {
+    const c = m.cases.find(x => x.id === id);
+    if (c) return { mod: m, c };
+  }
+  return null;
+};
+
+function UatList({ go }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">UAT Test Script</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Yehulu Microfinance core banking · {UAT_MODULES.length} modules · {uatTotal} prepared test cases.
+        Each case shows its steps, test data and expected result.
+      </p>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {UAT_MODULES.map(m => (
+          <button key={m.id} onClick={() => go({ view: "uatmodule", uatModId: m.id })}
+            className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5">{m.id}</span>
+              <ClipboardList size={15} className="text-indigo-600" />
+            </div>
+            <div className="mt-2 font-medium text-slate-900 line-clamp-2">{uatModShort(m)}</div>
+            <div className="text-sm text-slate-500">{m.cases.length} test cases</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UatModule({ modId, go }) {
+  const m = UAT_MODULES.find(x => x.id === modId);
+  if (!m) return null;
+  const groups = [];
+  for (const c of m.cases) {
+    const g = groups.find(x => x.sub === c.sub);
+    (g || groups[groups.push({ sub: c.sub, items: [] }) - 1]).items.push(c);
+  }
+  return (
+    <div className="max-w-3xl">
+      <button onClick={() => go({ view: "uat" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> UAT Test Script</button>
+      <div className="flex items-center gap-2 text-xs text-slate-400"><span className="font-mono">{m.id}</span></div>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{uatModShort(m)}</h1>
+      <p className="mt-1 text-sm text-slate-500">{m.cases.length} test cases</p>
+      <div className="mt-5 space-y-5">
+        {groups.map(g => (
+          <div key={g.sub}>
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">{g.sub || "Other"}</div>
+            <div className="space-y-2">
+              {g.items.map(c => (
+                <button key={c.id} onClick={() => go({ view: "uatcase", uatCaseId: c.id })}
+                  className="flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+                  <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5 shrink-0 mt-0.5">{c.id}</span>
+                  <span className="text-sm text-slate-800">{c.desc}</span>
+                  <ChevronRight size={15} className="text-slate-300 ml-auto shrink-0 mt-0.5" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UatCase({ caseId, go }) {
+  const hit = uatFindCase(caseId);
+  if (!hit) return null;
+  const { mod, c } = hit;
+  const idx = mod.cases.findIndex(x => x.id === caseId);
+  const prev = idx > 0 ? mod.cases[idx - 1] : null;
+  const next = idx < mod.cases.length - 1 ? mod.cases[idx + 1] : null;
+  const Field = ({ label, children }) => (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5">{label}</div>
+      {children}
+    </div>
+  );
+  return (
+    <div className="max-w-2xl">
+      <button onClick={() => go({ view: "uatmodule", uatModId: mod.id })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> {uatModShort(mod)}</button>
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-sm text-indigo-700 bg-indigo-50 rounded px-2 py-0.5">{c.id}</span>
+        {c.sub && <span className="text-xs text-slate-400">{c.sub}</span>}
+      </div>
+      <h1 className="mt-2 text-xl font-semibold text-slate-900 tracking-tight">{c.desc}</h1>
+      {c.ref && <p className="mt-1 text-xs text-slate-400">Requirement: {withMono(c.ref)}</p>}
+
+      <div className="mt-5 space-y-3">
+        {c.pre && <Field label="Pre-conditions"><p className="text-sm leading-relaxed text-slate-700">{withMono(c.pre)}</p></Field>}
+        <Field label="Test steps">
+          <ol className="space-y-2">
+            {c.steps.map((s, i) => (
+              <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-800">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold ring-1 ring-indigo-100">{i + 1}</span>
+                <span>{withMono(s)}</span>
+              </li>
+            ))}
+          </ol>
+        </Field>
+        {c.data && <Field label="Test data"><p className="text-sm leading-relaxed text-slate-700">{withMono(c.data)}</p></Field>}
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-emerald-600 mb-1.5"><Check size={13} /> Expected result</div>
+          <p className="text-sm leading-relaxed text-emerald-900">{withMono(c.expected)}</p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-stretch gap-3 border-t border-slate-200 pt-4">
+        {prev ? (
+          <button onClick={() => go({ view: "uatcase", uatCaseId: prev.id })}
+            className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+            <div className="flex items-center gap-1 text-xs text-slate-400"><ArrowLeft size={12} /> {prev.id}</div>
+            <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{prev.desc}</div>
+          </button>
+        ) : <div className="flex-1" />}
+        {next ? (
+          <button onClick={() => go({ view: "uatcase", uatCaseId: next.id })}
+            className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-indigo-300 transition-colors">
+            <div className="flex items-center justify-end gap-1 text-xs text-slate-400">{next.id} <ArrowRight size={12} /></div>
+            <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{next.desc}</div>
+          </button>
+        ) : <div className="flex-1" />}
+      </div>
+    </div>
+  );
+}
+
 function LabsList({ go }) {
   return (
     <div>
@@ -4661,6 +4795,7 @@ export default function App() {
     { id: "flashcards", label: "Flashcards", icon: BookMarked },
     { id: "diagrams", label: "Diagrams", icon: GitBranch },
     { id: "labs", label: "Sandbox", icon: Wrench },
+    { id: "uat", label: "UAT", icon: ClipboardList },
     { id: "progress", label: "Progress", icon: BarChart3 },
   ];
 
@@ -4692,7 +4827,8 @@ export default function App() {
                 : (nav.view === n.id
                   || (n.id === "courses" && ["course", "section", "concept", "quiz", "assessment"].includes(nav.view) && !inTraining)
                   || (n.id === "diagrams" && nav.view === "diagram")
-                  || (n.id === "labs" && nav.view === "lab"));
+                  || (n.id === "labs" && nav.view === "lab")
+                  || (n.id === "uat" && ["uatmodule", "uatcase"].includes(nav.view)));
               return (
                 <button key={n.id} onClick={() => go(n.target || { view: n.id })}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-indigo-50 text-indigo-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
@@ -4785,6 +4921,9 @@ export default function App() {
               <LabView id={nav.labId} onOpen={go} />
             </div>
           )}
+          {nav.view === "uat" && <UatList go={go} />}
+          {nav.view === "uatmodule" && <UatModule modId={nav.uatModId} go={go} />}
+          {nav.view === "uatcase" && <UatCase caseId={nav.uatCaseId} go={go} />}
           {nav.view === "progress" && (
             <ProgressView {...{ overallPct, conceptsLearned, coursePct, progress }} />
           )}
