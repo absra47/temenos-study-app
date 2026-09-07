@@ -4534,35 +4534,116 @@ const uatFindCase = (id) => {
   }
   return null;
 };
+const UAT_STATUSES = [
+  { id: "pass",    label: "Pass",    cls: "border-emerald-300 bg-emerald-50 text-emerald-800", dot: "bg-emerald-500" },
+  { id: "fail",    label: "Fail",    cls: "border-rose-300 bg-rose-50 text-rose-800",           dot: "bg-rose-500" },
+  { id: "blocked", label: "Blocked", cls: "border-amber-300 bg-amber-50 text-amber-800",        dot: "bg-amber-500" },
+];
+const uatStatusMeta = (id) => UAT_STATUSES.find(s => s.id === id);
+const uatModStats = (m, uatStatus) => {
+  const s = { pass: 0, fail: 0, blocked: 0, done: 0 };
+  for (const c of m.cases) {
+    const st = uatStatus[c.id];
+    if (st) { s[st]++; s.done++; }
+  }
+  return s;
+};
 
-function UatList({ go }) {
+function UatStatusPill({ status, size = "sm" }) {
+  const meta = uatStatusMeta(status);
+  if (!meta) return (
+    <span className={`inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 text-slate-400 ${size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Not run
+    </span>
+  );
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border ${meta.cls} ${size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} font-medium`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} /> {meta.label}
+    </span>
+  );
+}
+
+function UatResetButton({ label, onReset, disabled }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => { if (!armed) return; const t = setTimeout(() => setArmed(false), 4000); return () => clearTimeout(t); }, [armed]);
+  if (disabled) return null;
+  return armed ? (
+    <span className="inline-flex items-center gap-1">
+      <button onClick={() => { onReset(); setArmed(false); }}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
+        Confirm reset
+      </button>
+      <button onClick={() => setArmed(false)} className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500">Cancel</button>
+    </span>
+  ) : (
+    <button onClick={() => setArmed(true)}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-500 hover:border-rose-300 hover:text-rose-700">
+      <RotateCcw size={12} /> {label}
+    </button>
+  );
+}
+
+function UatProgressBar({ stats, total }) {
+  const seg = (n, cls) => n > 0 && <div className={cls} style={{ width: `${(n / total) * 100}%` }} />;
+  return (
+    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+      {seg(stats.pass, "bg-emerald-500")}
+      {seg(stats.fail, "bg-rose-500")}
+      {seg(stats.blocked, "bg-amber-500")}
+    </div>
+  );
+}
+
+function UatList({ go, uatStatus, resetUat }) {
+  const overall = UAT_MODULES.reduce((a, m) => {
+    const s = uatModStats(m, uatStatus);
+    return { pass: a.pass + s.pass, fail: a.fail + s.fail, blocked: a.blocked + s.blocked, done: a.done + s.done };
+  }, { pass: 0, fail: 0, blocked: 0, done: 0 });
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">UAT Test Script</h1>
       <p className="mt-1 text-sm text-slate-500">
         Yehulu Microfinance core banking · {UAT_MODULES.length} modules · {uatTotal} prepared test cases.
-        Each case shows its steps, test data and expected result.
+        Mark each case Pass / Fail / Blocked as you work through it.
       </p>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium text-slate-900">{overall.done} / {uatTotal} executed</span>
+          <span className="flex items-center gap-3 text-xs text-slate-500">
+            <span className="text-emerald-700">{overall.pass} pass</span>
+            <span className="text-rose-700">{overall.fail} fail</span>
+            <span className="text-amber-700">{overall.blocked} blocked</span>
+            <UatResetButton label="Reset all" onReset={() => resetUat()} disabled={overall.done === 0} />
+          </span>
+        </div>
+        <div className="mt-2"><UatProgressBar stats={overall} total={uatTotal} /></div>
+      </div>
       <div className="mt-5 grid grid-cols-2 gap-3">
-        {UAT_MODULES.map(m => (
-          <button key={m.id} onClick={() => go({ view: "uatmodule", uatModId: m.id })}
-            className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5">{m.id}</span>
-              <ClipboardList size={15} className="text-indigo-600" />
-            </div>
-            <div className="mt-2 font-medium text-slate-900 line-clamp-2">{uatModShort(m)}</div>
-            <div className="text-sm text-slate-500">{m.cases.length} test cases</div>
-          </button>
-        ))}
+        {UAT_MODULES.map(m => {
+          const s = uatModStats(m, uatStatus);
+          return (
+            <button key={m.id} onClick={() => go({ view: "uatmodule", uatModId: m.id })}
+              className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5">{m.id}</span>
+                <ClipboardList size={15} className="text-indigo-600" />
+                {s.fail > 0 && <span className="ml-auto text-[11px] font-medium text-rose-600">{s.fail} fail</span>}
+              </div>
+              <div className="mt-2 font-medium text-slate-900 line-clamp-2">{uatModShort(m)}</div>
+              <div className="text-sm text-slate-500">{s.done} / {m.cases.length} executed</div>
+              <div className="mt-2"><UatProgressBar stats={s} total={m.cases.length} /></div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function UatModule({ modId, go }) {
+function UatModule({ modId, go, uatStatus, resetUat }) {
   const m = UAT_MODULES.find(x => x.id === modId);
   if (!m) return null;
+  const s = uatModStats(m, uatStatus);
   const groups = [];
   for (const c of m.cases) {
     const g = groups.find(x => x.sub === c.sub);
@@ -4573,7 +4654,14 @@ function UatModule({ modId, go }) {
       <button onClick={() => go({ view: "uat" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> UAT Test Script</button>
       <div className="flex items-center gap-2 text-xs text-slate-400"><span className="font-mono">{m.id}</span></div>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">{uatModShort(m)}</h1>
-      <p className="mt-1 text-sm text-slate-500">{m.cases.length} test cases</p>
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+        <span>{s.done} / {m.cases.length} executed</span>
+        {s.pass > 0 && <span className="text-emerald-700">{s.pass} pass</span>}
+        {s.fail > 0 && <span className="text-rose-700">{s.fail} fail</span>}
+        {s.blocked > 0 && <span className="text-amber-700">{s.blocked} blocked</span>}
+        <UatResetButton label="Reset module" onReset={() => resetUat(m.id)} disabled={s.done === 0} />
+      </div>
+      <div className="mt-2 max-w-md"><UatProgressBar stats={s} total={m.cases.length} /></div>
       <div className="mt-5 space-y-5">
         {groups.map(g => (
           <div key={g.sub}>
@@ -4581,10 +4669,13 @@ function UatModule({ modId, go }) {
             <div className="space-y-2">
               {g.items.map(c => (
                 <button key={c.id} onClick={() => go({ view: "uatcase", uatCaseId: c.id })}
-                  className="flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
-                  <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5 shrink-0 mt-0.5">{c.id}</span>
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+                  <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5 shrink-0">{c.id}</span>
                   <span className="text-sm text-slate-800">{c.desc}</span>
-                  <ChevronRight size={15} className="text-slate-300 ml-auto shrink-0 mt-0.5" />
+                  <span className="ml-auto shrink-0 flex items-center gap-2">
+                    <UatStatusPill status={uatStatus[c.id]} />
+                    <ChevronRight size={15} className="text-slate-300" />
+                  </span>
                 </button>
               ))}
             </div>
@@ -4595,10 +4686,11 @@ function UatModule({ modId, go }) {
   );
 }
 
-function UatCase({ caseId, go }) {
+function UatCase({ caseId, go, uatStatus, setUat }) {
   const hit = uatFindCase(caseId);
   if (!hit) return null;
   const { mod, c } = hit;
+  const status = uatStatus[c.id];
   const idx = mod.cases.findIndex(x => x.id === caseId);
   const prev = idx > 0 ? mod.cases[idx - 1] : null;
   const next = idx < mod.cases.length - 1 ? mod.cases[idx + 1] : null;
@@ -4614,11 +4706,31 @@ function UatCase({ caseId, go }) {
       <div className="flex items-center gap-2">
         <span className="font-mono text-sm text-indigo-700 bg-indigo-50 rounded px-2 py-0.5">{c.id}</span>
         {c.sub && <span className="text-xs text-slate-400">{c.sub}</span>}
+        <span className="ml-auto"><UatStatusPill status={status} size="lg" /></span>
       </div>
       <h1 className="mt-2 text-xl font-semibold text-slate-900 tracking-tight">{c.desc}</h1>
       {c.ref && <p className="mt-1 text-xs text-slate-400">Requirement: {withMono(c.ref)}</p>}
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">Result</div>
+        <div className="flex flex-wrap gap-2">
+          {UAT_STATUSES.map(st => (
+            <button key={st.id} onClick={() => setUat(c.id, st.id)}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                status === st.id ? st.cls : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
+              <span className={`h-2 w-2 rounded-full ${st.dot}`} /> {st.label}
+            </button>
+          ))}
+          {status && (
+            <button onClick={() => setUat(c.id, null)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800">
+              <RotateCcw size={13} /> Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
         {c.pre && <Field label="Pre-conditions"><p className="text-sm leading-relaxed text-slate-700">{withMono(c.pre)}</p></Field>}
         <Field label="Test steps">
           <ol className="space-y-2">
@@ -4757,7 +4869,20 @@ function LabView({ id, onOpen }) {
 // ============================================================================
 export default function App() {
   const [progress, setProgress] = usePersistentState("temenos-progress-v1", {
-    read: {}, quiz: {}, assess: {}, flash: {}, last: null,
+    read: {}, quiz: {}, assess: {}, flash: {}, last: null, uat: {},
+  });
+  const uatStatus = progress.uat || {};
+  const setUat = (id, status) => setProgress(p => {
+    const next = { ...(p.uat || {}) };
+    if (!status || next[id] === status) delete next[id]; else next[id] = status;
+    return { ...p, uat: next };
+  });
+  const resetUat = (modId) => setProgress(p => {
+    if (!modId) return { ...p, uat: {} };
+    const mod = UAT_MODULES.find(m => m.id === modId);
+    const ids = new Set((mod?.cases || []).map(c => c.id));
+    const next = Object.fromEntries(Object.entries(p.uat || {}).filter(([k]) => !ids.has(k)));
+    return { ...p, uat: next };
   });
   const [nav, setNav] = useState({ view: "dashboard" });
   const [conceptMode, setConceptMode] = useState("steps");
@@ -4844,7 +4969,7 @@ export default function App() {
         {/* Main */}
         <main className="min-w-0">
           {nav.view === "dashboard" && (
-            <Dashboard {...{ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, coursePct, progress, go }} />
+            <Dashboard {...{ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, coursePct, progress, uatStatus, go }} />
           )}
           {nav.view === "courses" && (
             <CoursesList {...{ coursePct, go }} />
@@ -4921,9 +5046,9 @@ export default function App() {
               <LabView id={nav.labId} onOpen={go} />
             </div>
           )}
-          {nav.view === "uat" && <UatList go={go} />}
-          {nav.view === "uatmodule" && <UatModule modId={nav.uatModId} go={go} />}
-          {nav.view === "uatcase" && <UatCase caseId={nav.uatCaseId} go={go} />}
+          {nav.view === "uat" && <UatList go={go} uatStatus={uatStatus} resetUat={resetUat} />}
+          {nav.view === "uatmodule" && <UatModule modId={nav.uatModId} go={go} uatStatus={uatStatus} resetUat={resetUat} />}
+          {nav.view === "uatcase" && <UatCase caseId={nav.uatCaseId} go={go} uatStatus={uatStatus} setUat={setUat} />}
           {nav.view === "progress" && (
             <ProgressView {...{ overallPct, conceptsLearned, coursePct, progress }} />
           )}
@@ -4958,8 +5083,11 @@ export default function App() {
 }
 
 // ---- Dashboard -------------------------------------------------------------
-function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, coursePct, progress, go }) {
+function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, coursePct, progress, uatStatus, go }) {
   const nextConcept = allConceptIds.find(id => !progress.read[id]);
+  const uat = Object.values(uatStatus || {});
+  const uatDone = uat.length;
+  const uatFail = uat.filter(s => s === "fail").length;
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
@@ -4969,7 +5097,9 @@ function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, 
         <StatCard label="Overall progress" value={`${overallPct}%`} sub={`${conceptsLearned}/${allConceptIds.length} concepts`} ring={overallPct} />
         <StatCard label="Quiz average" value={quizTaken ? `${avgQuiz}%` : "—"} sub={`${quizTaken} quizzes taken`} />
         <StatCard label="Flashcards due" value={dueFlash} sub="to review" />
-        <StatCard label="Courses" value={COURSES.length} sub="4 more can be added" />
+        <button onClick={() => go({ view: "uat" })} className="text-left">
+          <StatCard label="UAT executed" value={`${uatDone}/${uatTotal}`} sub={uatFail ? `${uatFail} failing` : "test cases"} />
+        </button>
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
