@@ -6,7 +6,7 @@ import {
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
-  Volume2, Square, Pause, Play, ClipboardList
+  Volume2, Square, Pause, Play, ClipboardList, Palette
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
 
@@ -4291,6 +4291,79 @@ function BackButton({ label, onClick }) {
   );
 }
 
+// ---- theme switcher — swaps the app's accent color scale at runtime ------
+// Tailwind's `indigo-*` classes resolve to CSS variables (see tailwind.config.js);
+// picking a theme here just rewrites those variables on the root element, so
+// every existing indigo-* class in the app repaints without any other change.
+const THEMES = [
+  { id: "temenos", name: "Temenos Blue", swatch: "#212a76",
+    scale: ["#f0f1fa", "#dfe2f4", "#c2c7e9", "#939dd8", "#6370c4", "#3a48a8", "#2b368c", "#212a76", "#1a215f", "#14194a"] },
+  { id: "nature", name: "Nature Green", swatch: "#1f7a4d",
+    scale: ["#eefbf3", "#d7f4e2", "#aee6c5", "#7dd3a5", "#4cbb85", "#2d9c68", "#1f7a4d", "#166040", "#124d34", "#0d3a27"] },
+  { id: "brinjal", name: "Brinjal Purple", swatch: "#5b2a6e",
+    scale: ["#f6effa", "#e8d6f0", "#d1aee0", "#b381cd", "#9459b8", "#77389c", "#5b2a6e", "#48225a", "#391b47", "#291334"] },
+  { id: "space", name: "Space Dark", swatch: "#2c3350",
+    scale: ["#eef0f7", "#d9dcec", "#b3b9d8", "#8b93c0", "#646ea6", "#454e88", "#333c6e", "#2c3350", "#20263e", "#161a2c"] },
+  { id: "ruby", name: "Ruby Red", swatch: "#9c2b3a",
+    scale: ["#fbeeef", "#f4d3d6", "#e6a3aa", "#d5717d", "#c14a58", "#a8323f", "#9c2b3a", "#7c222e", "#601a23", "#451318"] },
+];
+const THEME_KEY = "tsa.theme";
+
+function applyTheme(id) {
+  const t = THEMES.find(x => x.id === id) || THEMES[0];
+  const root = document.documentElement;
+  [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].forEach((step, i) => {
+    root.style.setProperty(`--accent-${step}`, t.scale[i]);
+  });
+  return t.id;
+}
+
+function useTheme() {
+  const [themeId, setThemeId] = useState("temenos");
+  useEffect(() => {
+    let id = "temenos";
+    try { id = localStorage.getItem(THEME_KEY) || "temenos"; } catch {}
+    setThemeId(applyTheme(id));
+  }, []);
+  const setTheme = (id) => {
+    setThemeId(applyTheme(id));
+    try { localStorage.setItem(THEME_KEY, id); } catch {}
+  };
+  return [themeId, setTheme];
+}
+
+function ThemePicker({ themeId, setTheme }) {
+  const [open, setOpen] = useState(false);
+  const current = THEMES.find(t => t.id === themeId) || THEMES[0];
+  return (
+    <span className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 hover:border-indigo-300"
+        aria-label="Change theme" title="Theme">
+        <span className="h-3.5 w-3.5 rounded-full ring-1 ring-black/10" style={{ background: current.swatch }} />
+        <Palette size={14} className="hidden sm:inline" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+            <div className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-slate-400">Theme</div>
+            {THEMES.map(t => (
+              <button key={t.id} onClick={() => { setTheme(t.id); setOpen(false); }}
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                  t.id === themeId ? "bg-indigo-50 text-indigo-800 font-medium" : "text-slate-700 hover:bg-slate-50"}`}>
+                <span className="h-4 w-4 rounded-full ring-1 ring-black/10" style={{ background: t.swatch }} />
+                {t.name}
+                {t.id === themeId && <Check size={14} className="ml-auto text-indigo-600" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </span>
+  );
+}
+
 function Bar({ pct }) {
   return (
     <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -4304,7 +4377,7 @@ function Ring({ pct, size = 64 }) {
   return (
     <svg width={size} height={size} className="-rotate-90">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#212a76" strokeWidth="6"
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent-600)" strokeWidth="6"
         strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} strokeLinecap="round"
         className="transition-all duration-700" />
     </svg>
@@ -5314,6 +5387,7 @@ export default function App() {
   const [nav, setNav] = useState({ view: "dashboard" });
   const [conceptMode, setConceptMode] = useState("steps");
   const [query, setQuery] = useState("");
+  const [themeId, setTheme] = useTheme();
 
   const go = (n) => { setNav(n); if (n.view === "concept") setConceptMode("steps"); window.scrollTo?.(0, 0); };
 
@@ -5361,11 +5435,14 @@ export default function App() {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white"><GraduationCap size={16} /></div>
               <span className="font-semibold tracking-tight">Temenos Study</span>
             </button>
-            <div className="ml-auto relative w-56">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={query} onChange={e => { setQuery(e.target.value); if (e.target.value) go({ view: "search" }); }}
-                placeholder="Search…"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-white" />
+            <div className="ml-auto flex items-center gap-2">
+              <div className="relative w-56">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input value={query} onChange={e => { setQuery(e.target.value); if (e.target.value) go({ view: "search" }); }}
+                  placeholder="Search…"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-white" />
+              </div>
+              <ThemePicker themeId={themeId} setTheme={setTheme} />
             </div>
           </div>
           <nav className="mt-3 flex flex-wrap items-center gap-1">

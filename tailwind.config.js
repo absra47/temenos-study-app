@@ -7,18 +7,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Temenos brand blue — rgb(33, 42, 118) = #212A76 anchored at 700
+        // Accent scale — driven by CSS variables so the in-app theme switcher
+        // can swap the whole app's accent color at runtime. Defaults (set in
+        // globals.css) are the Temenos brand blue, rgb(33,42,118) at 700.
         indigo: {
-          50:  "#f0f1fa",
-          100: "#dfe2f4",
-          200: "#c2c7e9",
-          300: "#939dd8",
-          400: "#6370c4",
-          500: "#3a48a8",
-          600: "#2b368c",
-          700: "#212a76",
-          800: "#1a215f",
-          900: "#14194a",
+          50:  "var(--accent-50)",
+          100: "var(--accent-100)",
+          200: "var(--accent-200)",
+          300: "var(--accent-300)",
+          400: "var(--accent-400)",
+          500: "var(--accent-500)",
+          600: "var(--accent-600)",
+          700: "var(--accent-700)",
+          800: "var(--accent-800)",
+          900: "var(--accent-900)",
         },
       },
     },
