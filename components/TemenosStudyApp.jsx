@@ -6,7 +6,7 @@ import {
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
-  Volume2, Square, Pause, Play, ClipboardList, Palette
+  Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
 
@@ -4332,22 +4332,64 @@ function useTheme() {
   return [themeId, setTheme];
 }
 
-function ThemePicker({ themeId, setTheme }) {
+// ---- Light / Dark / System mode — sets data-theme on <html>; CSS in
+// globals.css does the actual repainting via the --slate-*/--surface vars.
+const MODE_KEY = "tsa.mode";
+const MODES = [
+  { id: "light", label: "Light", icon: Sun },
+  { id: "dark", label: "Dark", icon: Moon },
+  { id: "system", label: "System", icon: Monitor },
+];
+function applyMode(mode) {
+  const root = document.documentElement;
+  if (mode === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", mode);
+  return mode;
+}
+function useMode() {
+  const [mode, setModeState] = useState("system");
+  useEffect(() => {
+    let m = "system";
+    try { m = localStorage.getItem(MODE_KEY) || "system"; } catch {}
+    setModeState(applyMode(m));
+  }, []);
+  const setMode = (m) => {
+    setModeState(applyMode(m));
+    try { localStorage.setItem(MODE_KEY, m); } catch {}
+  };
+  return [mode, setMode];
+}
+
+function ThemePicker({ themeId, setTheme, mode, setMode }) {
   const [open, setOpen] = useState(false);
   const current = THEMES.find(t => t.id === themeId) || THEMES[0];
   return (
     <span className="relative">
       <button onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 hover:border-indigo-300"
-        aria-label="Change theme" title="Theme">
+        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-2.5 py-1.5 text-sm text-slate-600 hover:border-indigo-300"
+        aria-label="Appearance" title="Appearance">
         <span className="h-3.5 w-3.5 rounded-full ring-1 ring-black/10" style={{ background: current.swatch }} />
         <Palette size={14} className="hidden sm:inline" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-            <div className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-slate-400">Theme</div>
+          <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-slate-200 bg-surface p-2 shadow-lg">
+            <div className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-slate-400">Appearance</div>
+            <div className="flex gap-1 px-1 pb-2">
+              {MODES.map(m => {
+                const Icon = m.icon;
+                return (
+                  <button key={m.id} onClick={() => setMode(m.id)}
+                    className={`flex flex-1 flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
+                      mode === m.id ? "border-indigo-300 bg-indigo-50 text-indigo-800 font-medium" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                    <Icon size={14} />
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-slate-400">Accent color</div>
             {THEMES.map(t => (
               <button key={t.id} onClick={() => { setTheme(t.id); setOpen(false); }}
                 className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
@@ -4376,7 +4418,7 @@ function Ring({ pct, size = 64 }) {
   const r = (size - 8) / 2, c = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--slate-200)" strokeWidth="6" />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent-600)" strokeWidth="6"
         strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} strokeLinecap="round"
         className="transition-all duration-700" />
@@ -4570,7 +4612,7 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
       <button onClick={toggle}
         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
           status === "idle"
-            ? "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-800"
+            ? "border-slate-200 bg-surface text-slate-600 hover:border-indigo-300 hover:text-indigo-800"
             : "border-indigo-300 bg-indigo-50 text-indigo-800"}`}
         aria-label={btnLabel}>
         {status === "playing" ? <Pause size={14} /> : status === "paused" ? <Play size={14} /> : <Volume2 size={14} />}
@@ -4578,19 +4620,19 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
       </button>
       {status !== "idle" && (
         <button onClick={hardStop}
-          className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:text-slate-800"
+          className="inline-flex items-center rounded-lg border border-slate-200 bg-surface p-1.5 text-slate-500 hover:text-slate-800"
           aria-label="Stop reading">
           <Square size={13} />
         </button>
       )}
       <button onClick={() => setShowOpts(o => !o)}
-        className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-400 hover:text-slate-700"
+        className="inline-flex items-center rounded-lg border border-slate-200 bg-surface p-1.5 text-slate-400 hover:text-slate-700"
         aria-label="Voice settings" title="Voice settings">
         <ChevronRight size={13} className={showOpts ? "rotate-90 transition-transform" : "transition-transform"} />
       </button>
 
       {showOpts && (
-        <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-lg">
+        <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-slate-200 bg-surface p-3 text-sm shadow-lg">
           <div className="mb-2 inline-flex rounded-lg border border-slate-200 p-0.5">
             {[["device", "Device"], ["natural", "Natural ★"]].map(([id, lbl]) => (
               <button key={id} onClick={() => { setEngine(id); hardStop(); }}
@@ -4604,7 +4646,7 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
             <>
               <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Voice</label>
               <select value={chosen?.name || ""} onChange={e => { setVoiceName(e.target.value); hardStop(); }}
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                className="w-full rounded-lg border border-slate-200 bg-surface px-2 py-1.5">
                 {voices.length === 0 && <option>Loading voices…</option>}
                 {voices.map(v => (
                   <option key={v.name} value={v.name}>
@@ -4618,7 +4660,7 @@ function SpeakButton({ getText, resetKey, label = "Read aloud" }) {
             <>
               <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Cloud voice</label>
               <select value={naturalId} onChange={e => { setNaturalId(e.target.value); hardStop(); }}
-                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5">
+                className="w-full rounded-lg border border-slate-200 bg-surface px-2 py-1.5">
                 {NATURAL_VOICES.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
               </select>
               <p className="mt-1.5 text-xs text-slate-400">Powered by Puter.js — needs internet; free tier, no sign-in for light use. Page text is sent to the voice provider.</p>
@@ -4680,7 +4722,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
       <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{c.title}</h1>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-surface p-0.5">
           {modes.map(m => (
             <button key={m.id} onClick={() => setMode(m.id)}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${mode === m.id ? "bg-indigo-600 text-white" : "text-slate-600 hover:text-slate-900"}`}>
@@ -4696,7 +4738,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={slideImgSrc(conceptId)} alt={`${c.title} — screenshot from the course slides`}
             loading="lazy"
-            className="w-full rounded-xl border border-slate-200 bg-white" />
+            className="w-full rounded-xl border border-slate-200 bg-surface" />
           <figcaption className="mt-1.5 text-xs text-slate-400">Screenshot from the course slides</figcaption>
         </figure>
       )}
@@ -4735,7 +4777,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
       )}
 
       {mode === "simply" && (
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mt-6 rounded-xl border border-slate-200 bg-surface p-5">
           <p className="text-lg leading-relaxed text-slate-800">{c.simple}</p>
           <div className="mt-4 rounded-lg bg-slate-50 p-4">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">If you saw it in a real bank</div>
@@ -4773,7 +4815,7 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           <div className="flex flex-wrap gap-2">
             {c.related.filter(r => CONCEPTS[r]).map(r => (
               <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
                 {CONCEPTS[r].title} <ArrowRight size={12} />
               </button>
             ))}
@@ -4796,14 +4838,14 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           <div className="mt-6 flex items-stretch gap-3 border-t border-slate-200 pt-4">
             {prev ? (
               <button onClick={() => onOpen({ view: "concept", conceptId: prev })}
-                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+                className="group flex-1 rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300 transition-colors">
                 <div className="flex items-center gap-1 text-xs text-slate-400"><ArrowLeft size={12} /> Previous</div>
                 <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{CONCEPTS[prev].title}</div>
               </button>
             ) : <div className="flex-1" />}
             {next ? (
               <button onClick={() => onOpen({ view: "concept", conceptId: next })}
-                className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-indigo-300 transition-colors">
+                className="group flex-1 rounded-lg border border-slate-200 bg-surface p-3 text-right hover:border-indigo-300 transition-colors">
                 <div className="flex items-center justify-end gap-1 text-xs text-slate-400">Next <ArrowRight size={12} /></div>
                 <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{CONCEPTS[next].title}</div>
               </button>
@@ -4848,7 +4890,7 @@ function QuizRunner({ title, questions, onFinish }) {
     return (
       <div className="max-w-2xl">
         <h2 className="text-xl font-semibold text-slate-900">{title} — results</h2>
-        <div className="mt-4 flex items-center gap-5 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mt-4 flex items-center gap-5 rounded-xl border border-slate-200 bg-surface p-5">
           <Ring pct={pct} />
           <div>
             <div className="text-3xl font-semibold text-slate-900">{pct}%</div>
@@ -4890,7 +4932,7 @@ function QuizRunner({ title, questions, onFinish }) {
           const chosen = picked === oi;
           const reveal = picked !== null;
           const isAns = oi === cur.answer;
-          let cls = "border-slate-200 bg-white hover:border-slate-300";
+          let cls = "border-slate-200 bg-surface hover:border-slate-300";
           if (reveal && isAns) cls = "border-blue-300 bg-blue-50";
           else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50";
           return (
@@ -4944,7 +4986,7 @@ function Flashcards({ pool, flash, setFlash, title }) {
         </button>
       </div>
       <button onClick={() => setFlipped(f => !f)}
-        className="group w-full text-left rounded-2xl border border-slate-200 bg-white p-8 min-h-52 flex flex-col justify-center transition-shadow hover:shadow-sm">
+        className="group w-full text-left rounded-2xl border border-slate-200 bg-surface p-8 min-h-52 flex flex-col justify-center transition-shadow hover:shadow-sm">
         {!flipped ? (
           <>
             <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Question</div>
@@ -4963,11 +5005,11 @@ function Flashcards({ pool, flash, setFlash, title }) {
         <button onClick={() => go(-1)} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={16} /> Prev</button>
         <div className="flex gap-2">
           <button onClick={() => mark("review")}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "review" ? "bg-amber-100 text-amber-800" : "bg-white border border-slate-200 text-slate-600 hover:bg-amber-50"}`}>
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "review" ? "bg-amber-100 text-amber-800" : "bg-surface border border-slate-200 text-slate-600 hover:bg-amber-50"}`}>
             <RotateCcw size={14} /> Need review
           </button>
           <button onClick={() => mark("known")}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "known" ? "bg-blue-100 text-blue-800" : "bg-white border border-slate-200 text-slate-600 hover:bg-blue-50"}`}>
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${status === "known" ? "bg-blue-100 text-blue-800" : "bg-surface border border-slate-200 text-slate-600 hover:bg-blue-50"}`}>
             <Check size={14} /> Known
           </button>
         </div>
@@ -5003,7 +5045,7 @@ function DiagramFlow({ id }) {
       <div className="mt-6 space-y-0">
         {d.steps.map((s, i) => (
           <div key={i}>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="rounded-xl border border-slate-200 bg-surface p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 text-sm font-semibold">{i + 1}</div>
                 <div className="flex-1">
@@ -5073,11 +5115,11 @@ function UatResetButton({ label, onReset, disabled }) {
         className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
         Confirm reset
       </button>
-      <button onClick={() => setArmed(false)} className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500">Cancel</button>
+      <button onClick={() => setArmed(false)} className="rounded-lg border border-slate-200 bg-surface px-2 py-1 text-xs text-slate-500">Cancel</button>
     </span>
   ) : (
     <button onClick={() => setArmed(true)}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-500 hover:border-rose-300 hover:text-rose-700">
+      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-2.5 py-1 text-xs text-slate-500 hover:border-rose-300 hover:text-rose-700">
       <RotateCcw size={12} /> {label}
     </button>
   );
@@ -5106,7 +5148,7 @@ function UatList({ go, uatStatus, resetUat }) {
         Yehulu Microfinance core banking · {UAT_MODULES.length} modules · {uatTotal} prepared test cases.
         Mark each case Pass / Fail / Blocked as you work through it.
       </p>
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-4">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-slate-900">{overall.done} / {uatTotal} executed</span>
           <span className="flex items-center gap-3 text-xs text-slate-500">
@@ -5123,7 +5165,7 @@ function UatList({ go, uatStatus, resetUat }) {
           const s = uatModStats(m, uatStatus);
           return (
             <button key={m.id} onClick={() => go({ view: "uatmodule", uatModId: m.id })}
-              className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+              className="rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5">{m.id}</span>
                 <ClipboardList size={15} className="text-indigo-600" />
@@ -5169,7 +5211,7 @@ function UatModule({ modId, go, uatStatus, resetUat }) {
             <div className="space-y-2">
               {g.items.map(c => (
                 <button key={c.id} onClick={() => go({ view: "uatcase", uatCaseId: c.id })}
-                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300 transition-colors">
                   <span className="font-mono text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5 shrink-0">{c.id}</span>
                   <span className="text-sm text-slate-800">{c.desc}</span>
                   <span className="ml-auto shrink-0 flex items-center gap-2">
@@ -5195,7 +5237,7 @@ function UatCase({ caseId, go, uatStatus, setUat }) {
   const prev = idx > 0 ? mod.cases[idx - 1] : null;
   const next = idx < mod.cases.length - 1 ? mod.cases[idx + 1] : null;
   const Field = ({ label, children }) => (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200 bg-surface p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1.5">{label}</div>
       {children}
     </div>
@@ -5211,19 +5253,19 @@ function UatCase({ caseId, go, uatStatus, setUat }) {
       <h1 className="mt-2 text-xl font-semibold text-slate-900 tracking-tight">{c.desc}</h1>
       {c.ref && <p className="mt-1 text-xs text-slate-400">Requirement: {withMono(c.ref)}</p>}
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-3">
         <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">Result</div>
         <div className="flex flex-wrap gap-2">
           {UAT_STATUSES.map(st => (
             <button key={st.id} onClick={() => setUat(c.id, st.id)}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                status === st.id ? st.cls : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
+                status === st.id ? st.cls : "border-slate-200 bg-surface text-slate-600 hover:border-slate-300"}`}>
               <span className={`h-2 w-2 rounded-full ${st.dot}`} /> {st.label}
             </button>
           ))}
           {status && (
             <button onClick={() => setUat(c.id, null)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800">
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800">
               <RotateCcw size={13} /> Clear
             </button>
           )}
@@ -5252,14 +5294,14 @@ function UatCase({ caseId, go, uatStatus, setUat }) {
       <div className="mt-6 flex items-stretch gap-3 border-t border-slate-200 pt-4">
         {prev ? (
           <button onClick={() => go({ view: "uatcase", uatCaseId: prev.id })}
-            className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+            className="group flex-1 rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300 transition-colors">
             <div className="flex items-center gap-1 text-xs text-slate-400"><ArrowLeft size={12} /> {prev.id}</div>
             <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{prev.desc}</div>
           </button>
         ) : <div className="flex-1" />}
         {next ? (
           <button onClick={() => go({ view: "uatcase", uatCaseId: next.id })}
-            className="group flex-1 rounded-lg border border-slate-200 bg-white p-3 text-right hover:border-indigo-300 transition-colors">
+            className="group flex-1 rounded-lg border border-slate-200 bg-surface p-3 text-right hover:border-indigo-300 transition-colors">
             <div className="flex items-center justify-end gap-1 text-xs text-slate-400">{next.id} <ArrowRight size={12} /></div>
             <div className="mt-0.5 text-sm font-medium text-slate-700 group-hover:text-indigo-800 line-clamp-1">{next.desc}</div>
           </button>
@@ -5280,7 +5322,7 @@ function LabsList({ go }) {
           <div className="grid grid-cols-2 gap-3">
             {LABS.filter(l => l.courseId === c.id).map(l => (
               <button key={l.id} onClick={() => go({ view: "lab", labId: l.id })}
-                className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+                className="rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
                 <Wrench size={18} className="text-indigo-600" />
                 <div className="mt-2 font-medium text-slate-900">{l.title}</div>
                 <div className="text-sm text-slate-500 line-clamp-2">{l.goal}</div>
@@ -5355,7 +5397,7 @@ function LabView({ id, onOpen }) {
           <div className="flex flex-wrap gap-2">
             {l.related.filter(r => CONCEPTS[r]).map(r => (
               <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
                 {CONCEPTS[r].title} <ArrowRight size={12} />
               </button>
             ))}
@@ -5388,6 +5430,7 @@ export default function App() {
   const [conceptMode, setConceptMode] = useState("steps");
   const [query, setQuery] = useState("");
   const [themeId, setTheme] = useTheme();
+  const [mode, setMode] = useMode();
 
   const go = (n) => { setNav(n); if (n.view === "concept") setConceptMode("steps"); window.scrollTo?.(0, 0); };
 
@@ -5428,7 +5471,7 @@ export default function App() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 text-slate-900" style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/90 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-3">
           <div className="flex items-center gap-3">
             <button onClick={() => go({ view: "dashboard" })} className="flex items-center gap-2">
@@ -5440,9 +5483,9 @@ export default function App() {
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input value={query} onChange={e => { setQuery(e.target.value); if (e.target.value) go({ view: "search" }); }}
                   placeholder="Search…"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-white" />
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-400 focus:bg-surface" />
               </div>
-              <ThemePicker themeId={themeId} setTheme={setTheme} />
+              <ThemePicker themeId={themeId} setTheme={setTheme} mode={mode} setMode={setMode} />
             </div>
           </div>
           <nav className="mt-3 flex flex-wrap items-center gap-1">
@@ -5528,7 +5571,7 @@ export default function App() {
               <div className="mt-5 grid grid-cols-2 gap-3">
                 {Object.entries(DIAGRAMS).map(([k, d]) => (
                   <button key={k} onClick={() => go({ view: "diagram", diagramId: k })}
-                    className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+                    className="rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
                     <GitBranch size={18} className="text-indigo-600" />
                     <div className="mt-2 font-medium text-slate-900">{d.title}</div>
                     <div className="text-sm text-slate-500 line-clamp-2">{d.caption}</div>
@@ -5564,14 +5607,14 @@ export default function App() {
                   {searchResults.length === 0 && <p className="text-slate-500">Nothing found for "{query}".</p>}
                   {searchResults.map((r, i) => r.type === "concept" ? (
                     <button key={i} onClick={() => go({ view: "concept", conceptId: r.id })}
-                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300">
+                      className="block w-full rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300">
                       <div className="text-xs text-slate-400">Concept · {COURSES.find(c => c.id === conceptCourse[r.id])?.title}</div>
                       <div className="font-medium text-slate-900">{CONCEPTS[r.id].title}</div>
                       <div className="text-sm text-slate-500 line-clamp-1">{CONCEPTS[r.id].simple}</div>
                     </button>
                   ) : (
                     <button key={i} onClick={() => go({ view: "course", courseId: r.id })}
-                      className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300">
+                      className="block w-full rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300">
                       <div className="text-xs text-slate-400">Course</div>
                       <div className="font-medium text-slate-900">{COURSES.find(c => c.id === r.id).title}</div>
                     </button>
@@ -5606,7 +5649,7 @@ function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, 
         </button>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-surface p-5">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wide text-slate-400">What to study next</div>
@@ -5635,7 +5678,7 @@ function Dashboard({ overallPct, conceptsLearned, avgQuiz, dueFlash, quizTaken, 
 
 function StatCard({ label, value, sub, ring }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between">
+    <div className="rounded-xl border border-slate-200 bg-surface p-4 flex items-center justify-between">
       <div>
         <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
         <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>
@@ -5651,7 +5694,7 @@ function CourseCard({ course, pct, go }) {
   const quizCount = course.sections.length;
   return (
     <button onClick={() => go({ view: "course", courseId: course.id })}
-      className="rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+      className="rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
       <div className="flex items-center justify-between">
         <Mono>{course.code}</Mono>
         <span className="text-xs text-slate-400">{pct}%</span>
@@ -5691,7 +5734,7 @@ function CourseView({ course, isRead, coursePct, progress, go }) {
           const quizScore = progress.quiz[s.id]?.pct;
           return (
             <button key={s.id} onClick={() => go({ view: "section", courseId: course.id, sectionId: s.id })}
-              className="block w-full rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-indigo-300 transition-colors">
+              className="block w-full rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 text-sm font-medium">{i + 1}</div>
                 <div className="flex-1 min-w-0">
@@ -5709,7 +5752,7 @@ function CourseView({ course, isRead, coursePct, progress, go }) {
         })}
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 flex items-center justify-between">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-surface p-5 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 font-medium text-slate-900"><Award size={18} className="text-indigo-600" /> End-of-course assessment</div>
           <div className="text-sm text-slate-500 mt-0.5">{course.assessment.length} questions across knowledge, understanding and application.
@@ -5737,7 +5780,7 @@ function SectionView({ nav, isRead, progress, go }) {
       <div className="space-y-2">
         {section.concepts.map(id => (
           <button key={id} onClick={() => go({ view: "concept", conceptId: id })}
-            className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-indigo-300 transition-colors">
+            className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-surface p-3 text-left hover:border-indigo-300 transition-colors">
             {isRead(id) ? <CheckCircle2 size={18} className="text-blue-500 shrink-0" /> : <Circle size={18} className="text-slate-300 shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="font-medium text-slate-900">{CONCEPTS[id].title}</div>
@@ -5748,7 +5791,7 @@ function SectionView({ nav, isRead, progress, go }) {
         ))}
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 flex items-center justify-between">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-surface p-5 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 font-medium text-slate-900"><ListChecks size={18} className="text-indigo-600" /> Section quiz</div>
           <div className="text-sm text-slate-500 mt-0.5">{section.quiz.length} questions.{quizScore !== undefined && <span className="text-indigo-700 font-medium"> Last: {quizScore}%</span>}</div>
@@ -5780,7 +5823,7 @@ function FlashcardPicker({ flash, setFlash }) {
 function ScopeBtn({ active, onClick, children }) {
   return (
     <button onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}>
+      className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${active ? "bg-indigo-600 text-white border-indigo-600" : "bg-surface text-slate-600 border-slate-200 hover:border-slate-300"}`}>
       {children}
     </button>
   );
@@ -5790,7 +5833,7 @@ function ProgressView({ overallPct, conceptsLearned, coursePct, progress }) {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
-      <div className="mt-5 flex items-center gap-5 rounded-xl border border-slate-200 bg-white p-5">
+      <div className="mt-5 flex items-center gap-5 rounded-xl border border-slate-200 bg-surface p-5">
         <Ring pct={overallPct} size={72} />
         <div>
           <div className="text-3xl font-semibold text-slate-900">{overallPct}%</div>
@@ -5804,7 +5847,7 @@ function ProgressView({ overallPct, conceptsLearned, coursePct, progress }) {
           const secDone = c.sections.filter(s => s.concepts.every(id => progress.read[id])).length;
           const assess = progress.assess[c.id]?.pct;
           return (
-            <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <div key={c.id} className="rounded-xl border border-slate-200 bg-surface p-4">
               <div className="flex items-center justify-between">
                 <div className="font-medium text-slate-900">{c.title}</div>
                 <span className="text-sm text-slate-400">{pct}%</span>

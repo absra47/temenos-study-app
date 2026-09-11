@@ -22,6 +22,23 @@ module.exports = {
           800: "var(--accent-800)",
           900: "var(--accent-900)",
         },
+        // Neutral scale — also variable-driven, so Light/Dark/System mode
+        // repaints every bg-slate-*/text-slate-*/border-slate-* class at once.
+        slate: {
+          50:  "var(--slate-50)",
+          100: "var(--slate-100)",
+          200: "var(--slate-200)",
+          300: "var(--slate-300)",
+          400: "var(--slate-400)",
+          500: "var(--slate-500)",
+          600: "var(--slate-600)",
+          700: "var(--slate-700)",
+          800: "var(--slate-800)",
+          900: "var(--slate-900)",
+        },
+        // Card/panel surface — replaces literal bg-white so cards also flip
+        // in dark mode; the sticky header etc. use bg-surface too.
+        surface: "var(--surface)",
       },
     },
   },

@@ -14,6 +14,55 @@
   --accent-700: #212a76;
   --accent-800: #1a215f;
   --accent-900: #14194a;
+
+  /* Neutral scale — light (default Tailwind slate values) */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --surface: #ffffff;
+}
+
+/* Dark mode: OS preference (unless the user explicitly picked Light) ... */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --slate-50:  #0b0d12;
+    --slate-100: #12151c;
+    --slate-200: #232733;
+    --slate-300: #333947;
+    --slate-400: #7d8898;
+    --slate-500: #98a2b3;
+    --slate-600: #b0b8c4;
+    --slate-700: #cbd1db;
+    --slate-800: #e2e6ec;
+    --slate-900: #f5f7fa;
+    --surface: #171a22;
+  }
+}
+/* ...or an explicit Dark choice, which always wins either direction. */
+:root[data-theme="dark"] {
+  --slate-50:  #0b0d12;
+  --slate-100: #12151c;
+  --slate-200: #232733;
+  --slate-300: #333947;
+  --slate-400: #7d8898;
+  --slate-500: #98a2b3;
+  --slate-600: #b0b8c4;
+  --slate-700: #cbd1db;
+  --slate-800: #e2e6ec;
+  --slate-900: #f5f7fa;
+  --surface: #171a22;
+}
+
+body {
+  background: var(--slate-50);
+  color-scheme: light dark;
 }
 
 html,
