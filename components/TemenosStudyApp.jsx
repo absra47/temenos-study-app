@@ -3540,6 +3540,17 @@ const SLIDE_IMG = {
   // Module 8: teller
   tellermenu: "doc_headteller", tillmgmt: "doc_tillmgmt", cashmovement: "doc_cashmove",
   tellercash: "doc_cashdep", telleracctransfer: "doc_acctxfer",
+  // Course · Temenos Functional Training (TFT) — Day 1
+  tftExclusion: "tftExclusion", tftInclusion: "tftInclusion", tftInstitutions: "tftInstitutions",
+  tftProduct: "tftProduct", tftTiers: "tftTiers", tftMarkets: "tftMarkets", tftValue: "tftValue",
+  tftCustomerNeeds: "tftCustomerNeeds", tftFootprint: "tftFootprint",
+  tftPartners: "tftPartners", tftCertExams: "tftCertExams", tftMethodology: "tftMethodology",
+  tftPMControl: "tftPMControl", tftDeployment: "tftDeployment",
+  tftPBIntro1: "tftPBIntro1", tftPBIntro2: "tftPBIntro2", tftPBWizard: "tftPBWizard", tftPBFlow: "tftPBFlow",
+  tftInheritGroup: "tftInheritGroup", tftInheritComponents: "tftInheritComponents", tftSharedCond: "tftSharedCond",
+  tftAccessGroups: "tftAccessGroups", tftGroupCreation: "tftGroupCreation", tftGlobalCond: "tftGlobalCond",
+  tftParentCondTab: "tftParentCondTab", tftProofPublish: "tftProofPublish",
+  tftHandsOn1: "tftHandsOn1", tftHandsOn2: "tftHandsOn2",
 };
 const slideImgSrc = (conceptId) => {
   const f = SLIDE_IMG[conceptId];
