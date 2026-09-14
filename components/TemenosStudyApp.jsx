@@ -6,7 +6,7 @@ import {
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
-  Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor
+  Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor, Calculator
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
 
@@ -2613,6 +2613,7 @@ const CONCEPTS = {
     example: "A current account is linked to a 10,000 ETB unsecured limit; later the branch runs 'Increase overdraft limit amount' to raise it.",
     why: "Only current-type accounts may go into debit, and only up to a controlled, approved limit.",
     how: "From Account Enquiries → Overview → New Activity → Update Limit Link. Related activities: Update Limit Link, Increase / Decrease overdraft limit amount, Renew overdraft limit on account, Update limit review action. The account Overview shows Limit Details (Type, Amount, Secured, Outstanding, Available/Excess).",
+    figure: "Sam's current account has a 5,000 ETB approved limit and a 1,200 ETB credit balance. He withdraws 4,000 ETB → new balance = 1,200 − 4,000 = −2,800 ETB, still inside the 5,000 limit, so it goes through; Available on the limit is now 5,000 − 2,800 = 2,200 ETB. If he then tries to withdraw 3,000 more, that would need −5,800 ETB, past the 5,000 limit, so it's rejected — the exact rule that keeps every savings account from ever going negative at all.",
     memory: "Overdraft = an approved limit linked to the account; change it with the Limit Link activities.",
     temenos: "The LIMIT property links the arrangement to a LIMIT-module limit; savings/non-current products are barred from debit balances.",
     related: ["aaaccount", "acctrestriction", "lpb1limit"],
@@ -2634,6 +2635,7 @@ const CONCEPTS = {
     example: "A product defaults to Rollover; at maturity the principal rolls into a new term and the accrued interest is paid to the customer's account.",
     why: "Most deposits renew automatically; the bank needs the renewal behaviour fixed up front.",
     how: "Maturity Instruction — Rollover (default) or Close (exceptional, on customer request). Rollover Type — Principal only, or Principal and Interest. Int. Pay Method — with Rollover Type = Principal, set to 'Pay' (accrued interest paid at term end or on the Int. Pay Frequency); with Rollover Type = Principal and Interest, set to 'Capitalise'. Int. Pay Start Date only matters when the method is Pay.",
+    figure: "Mihret places a 12-month term deposit of 20,000 ETB at 10% p.a. Rollover Type = Principal and Interest, so Int. Pay Method = Capitalise: at maturity the 2,000 ETB interest (20,000 × 10%) is added to the principal, and the new term starts at 22,000 ETB. If she'd chosen Rollover Type = Principal only with Int. Pay Method = Pay, the 2,000 ETB interest would instead be paid out to her account and only the original 20,000 ETB would roll over.",
     memory: "Rollover vs Close · roll Principal only or Principal+Interest · Pay vs Capitalise the interest.",
     temenos: "Set in the DEPOSITS product line; captured at Application Input; automatic rollover runs at COB on the maturity date.",
     related: ["depapplication", "depredemption"],
@@ -2654,6 +2656,7 @@ const CONCEPTS = {
     example: "A customer needs 1,000 back; you enter the amount and date, the simulation shows the new interest-at-maturity, then you complete the withdrawal from the Deposit Overview.",
     why: "Early access changes the interest the customer will earn — that has to be calculated and shown.",
     how: "From the deposit's Arrangement Overview → Withdraw Deposit. Enter the withdrawal amount and date; a simulation (id AASIM…) runs 'Partial Withdrawal of Deposit' and produces a Withdrawal Statement (current balance, amount, interest at maturity, new interest at maturity). Then go to SCV → Portfolio → Deposit Overview and complete it.",
+    figure: "Mihret's 20,000 ETB deposit was tracking 2,000 ETB interest at maturity. She withdraws 5,000 ETB early: the simulation now shows the deposit's principal at 15,000 ETB and the projected interest at maturity dropping to roughly 1,500 ETB — the same 10% rate, just on a smaller base for the rest of the term.",
     memory: "Withdraw Deposit → simulate → check the new interest at maturity → complete from the Overview.",
     temenos: "Simulation Status Processing → Completed - Successfully; activity 'Partial Withdrawal of Deposit'.",
     related: ["depredemption", "depapplication"],
@@ -2664,6 +2667,7 @@ const CONCEPTS = {
     example: "A customer redeems a deposit: the simulation shows the balance due, a pre-closure fee override is accepted, the customer is credited, and COB closes the account.",
     why: "Full early closure needs an exact settlement figure and any break fee, before the money moves.",
     how: "From the Arrangement Overview → Redeem Deposit. Enter the redemption date and a Closure Reason; a simulation runs 'Redeem Arrangement' and produces a Redemption Statement (itemised by property). A Charge Override tab may show a pre-closure fee to accept. Once accepted the customer is credited and the contract goes to Pending Closure; subsequent COBs close it.",
+    figure: "Mihret redeems her 20,000 ETB deposit three months early. The Redemption Statement itemises: Principal 20,000 + accrued interest 500 − pre-closure fee 150 = 20,350 ETB credited to her account. The contract then sits in Pending Closure until the next COB closes it out.",
     memory: "Redeem Deposit → simulate → accept any pre-closure fee → credited → Pending Closure → COB closes.",
     temenos: "PRECLOSUREFEE activity charge; contract status Pending Closure; final closure at COB.",
     related: ["depwithdrawal", "depmaturity", "acctclosure"],
@@ -2675,6 +2679,7 @@ const CONCEPTS = {
     example: "A vehicle loan runs Application Input → Eligibility Check → Guarantor → Collateral → Credit Assessment → Review/Approval → Offer Production → Loan Creation.",
     why: "Lending is the highest-risk activity — each stage is a control, and which stages apply is set per product.",
     how: "Stages: Application Input, Eligibility Check, Guarantor Input, Collateral Input, Credit Assessment, Review/Approval, Offer Production, Loan Creation. Each stage can be mandatory, optional or not required per the product configuration. Access from Yehulu Financial Inclusion → Loans → Create Loans. Commit at Loan Creation gives 'EM.LO.APPLICATION,LOAN.CREATION'.",
+    figure: "Sam applies for a 10,000 ETB vehicle loan over 12 months. Every later stage in this course is that same 10,000 ETB carried through Eligibility (checked against his age and deposit), Guarantor (Mihret locks 3,000 ETB), Collateral (his motorbike, Execution Value 9,500 ETB) and Credit Assessment (3,000 + 9,500 = 12,500 ETB security, a 25% buffer over the 10,000 requested) — see each stage's own worked example for the running numbers.",
     memory: "Input → Eligibility → Guarantor → Collateral → Credit Assessment → Review/Approve → Offer → Create.",
     temenos: "Application id prefixed LO…; stage status codes e.g. 101 input, 201 eligibility, 301 guarantor, 501 collateral, 701 credit assessment, 801 offer, 901 create.",
     related: ["loanappinput", "loaneligibility", "loanguarantor", "loancollateral", "loancreditassess"], diagram: "loflow",
@@ -2685,6 +2690,7 @@ const CONCEPTS = {
     example: "For customer 100001, product 'Yehulu Vehicle Loan', amount, term, payment frequency and purpose are captured; the Settlement tab names the disbursement, repayment and charge accounts.",
     why: "Everything downstream — eligibility, pricing, schedule — is driven by what's entered here.",
     how: "Key fields: Customer/Group Id, Loan Action (always NEW), Product, Currency (ETB unless configured), Amount Requested, Interest Rate, Term, Payment Frequency, Margin Rate/Operand, Installment Amount, Loan Purpose, Reason for Loan, Source of Funds. Asset Class shows the worst overdue status of the customer's existing loans. Settlement tab: Disburse Account, Repay Account 1 (+), Charge Account (falls back to the repay account if empty).",
+    figure: "Sam requests 10,000 ETB over 12 months at 18% p.a., monthly frequency, product 'Yehulu Vehicle Loan'. Disburse and Repay are both set to his current account 1000000123; he leaves Charge Account blank, so charges will fall back to that same account.",
     memory: "Who · what product · how much · term · frequency · purpose — plus disburse / repay / charge accounts.",
     temenos: "Loan Action = NEW; Asset Class is the customer's worst overdue status; the Charge Account defaults to the repayment account when blank.",
     related: ["loanapplication", "loaneligibility"],
@@ -2695,6 +2701,7 @@ const CONCEPTS = {
     example: "For a vehicle loan the rules Initial Deposit, Minimum Age and Nationality all return Passed, and the stage moves to '201 – Eligibility check complete'.",
     why: "Ineligible applications are stopped early, before effort is spent on guarantors and collateral.",
     how: "The stage shows the Subject (borrower), Check Required?, and a Rule/Result line per rule (e.g. Rule 1.1 Initial Deposit → Passed) with a Details line. Perform Check? controls whether the rules actually run. Notes capture the analyst's observations.",
+    figure: "Sam's rules: Initial Deposit needs ≥500 ETB in his account — he has 600 ETB → Passed. Minimum Age needs ≥18 — he's 24 → Passed. Nationality needs Ethiopian — Passed. All three clear, so the stage moves to 201 – Eligibility check complete before anyone looks at guarantors or collateral.",
     memory: "Product rules → pass/fail per rule → stage complete (201).",
     temenos: "Eligibility rules are configured on the loan product; for accounts, the equivalent check is built into Application Input instead of a separate stage.",
     related: ["loanapplication", "loanappinput"],
@@ -2705,6 +2712,7 @@ const CONCEPTS = {
     example: "An existing customer is added as guarantor with an account and a guarantee amount; that amount is locked on their account until the loan is repaid.",
     why: "Group and unsecured lending leans on guarantees; the guarantee has to be recorded and, where it's cash, held.",
     how: "From the Guarantor Input stage → More Actions → Guarantors → Guarantor Actions. Two paths: Add Loan Guarantors (guarantor is already a customer — pick the customer, account and guarantee amount, which is locked until the loan completes) or New External Guarantor (capture name, ID, address, employment for a non-customer, then select them back on the guarantor screen). Stage completes at '301 – Guarantor input complete'.",
+    figure: "Mihret, an existing customer, guarantees 3,000 ETB of Sam's 10,000 ETB loan. That 3,000 ETB is locked on her own account from this point on — she can't withdraw it — and stays locked until Sam's loan is fully repaid.",
     memory: "Existing customer → Add Loan Guarantor (amount locked). Non-customer → New External Guarantor.",
     temenos: "External guarantor id prefixed G…; the guarantee amount is held against the guarantor's account for the life of the loan.",
     related: ["loanapplication", "loancollateral"],
@@ -2715,6 +2723,7 @@ const CONCEPTS = {
     example: "A fixed property is added as collateral: Collateral Type 100 (Fixed Property), a nominal value of 60,000 and an execution value of 58,000.",
     why: "Secured lending needs the asset, its category, and a realistic recoverable value on record.",
     how: "From the Collateral Input stage: Applicant's Collateral Id and Guarantor's Collateral Id. Add via More Actions → Collaterals → Edit → Add. Set Collateral Type (broad category, e.g. 100 Fixed Property) and Collateral Code (finer classification). Values: Nominal (base/gross value), Maximum (policy cap the bank can recognise), Execution (estimated realisable value if enforced/sold), Third Party (external appraiser), Gen Ledger, Central Bank (regulatory value). Plus Currency, Country, Value Date, Review Frequency, Expiry Date, Address. Stage completes at '501 – Collateral input complete'.",
+    figure: "Sam pledges his motorbike. Nominal Value (what it's stated to be worth) = 12,000 ETB. Maximum Value (the bank's policy cap, here 80% of nominal) = 0.8 × 12,000 = 9,600 ETB. Execution Value (what the bank realistically expects to recover if it had to sell it) = 9,500 ETB — the figure that actually counts toward covering his 10,000 ETB loan.",
     memory: "Type + Code, then the value stack: Nominal · Maximum · Execution · Third-Party · GL · Central-Bank.",
     temenos: "COLLATERAL / COLLATERAL.TYPE records; the arrangement links to the applicant's and any guarantor's collateral.",
     related: ["loanguarantor", "loancreditassess"],
@@ -2725,6 +2734,7 @@ const CONCEPTS = {
     example: "Credit Assessment records a recommendation of Approve; Review/Approval then sets the approved amount, term and rate, with a credit score and recommended limit, and the decision-maker signs off.",
     why: "The lending decision is two-step: a professional recommendation, then an authorised approval, both on the record.",
     how: "Credit Assessment: Recommendation = Approve (recommend for approval) / Decline (recommend rejection) / Wait (postpone — need more info); Assessment Notes; completes at '701 – Credit assessment complete'. Review/Approval: Status, Approval Notes, Applied vs Approved Amount / Term / Interest Rate, Credit Score, Recommended Limit, Decision By.",
+    figure: "The cover check on Sam's loan: Mihret's guarantee (3,000 ETB) + the motorbike's Execution Value (9,500 ETB) = 12,500 ETB of security against the 10,000 ETB requested — a 25% buffer. Credit Assessment recommends Approve; Review/Approval then confirms Applied 10,000 / 12 months / 18% unchanged as Approved 10,000 / 12 months / 18%.",
     memory: "Assess → Approve / Decline / Wait. Approve → set Approved amount/term/rate vs Applied, decision by.",
     temenos: "The approval stage appears when the input user lacks approval authority or the product/limit needs it.",
     related: ["loancollateral", "loandisburse"],
@@ -2735,6 +2745,7 @@ const CONCEPTS = {
     example: "A loan is disbursed by account transfer: the loan account is debited 40,000 and the customer's current account credited the same, with a customer rate and spread applied.",
     why: "A created loan isn't money in the customer's hands until it's disbursed.",
     how: "From SCV → Portfolio → Loans Overview → open the arrangement → Transactions ⋯ menu. Options include Disbursement to Account, Disbursement by Cash, by Cheque, by Payment Order; and Repayment from Account / by Cash / from Guarantor; Payoff from Account. By Cash: Loan Account, Disbursement Currency, LCY Amount, Value Date. By Account Transfer: Loan Account (debit), Credit Account, Debit Amount, Debit Value Date, Customer Rate and Spread.",
+    figure: "Sam's 10,000 ETB loan is created with status Not Disbursed and Available for Withdrawal = 10,000 ETB. Disbursing by account transfer: the loan account is debited 10,000 ETB and his current account 1000000123 is credited 10,000 ETB — the same figure that was typed into Application Input, now actually in his hands.",
     memory: "Loans Overview → Transactions ⋯ → Disbursement by Cash / to Account.",
     temenos: "Cash disbursement id prefixed TT…; account transfer as an FT…; disbursement records against the loan arrangement.",
     related: ["loanapplication", "loanrepay"],
@@ -2745,6 +2756,7 @@ const CONCEPTS = {
     example: "A customer clears a loan early: a payoff is calculated (principal + accrued interest + any prepayment charge) and settled from their account.",
     why: "Most repayments come from the repayment account at COB, but manual repayment and early payoff are common exceptions.",
     how: "Repayments run automatically against the repayment account. Manual: SCV → Portfolio → Loans Overview → Transactions ⋯ → Repayment from Account / by Cash / from Guarantor. Payoff: the Payoff activity calculates the full settlement figure via simulation and settles it (Payoff from Account, or a Payment Order from the payoff statement).",
+    figure: "Six months in, Sam has 6,200 ETB principal left on his loan plus 140 ETB of interest accrued since the last bill. He asks to clear it today: Payoff = 6,200 + 140 = 6,340 ETB (plus any prepayment charge the product carries). That 6,340 ETB is debited from his account in one settlement instead of the remaining monthly instalments.",
     memory: "Auto by default · manual repayment via the arrangement · payoff = full early settlement, simulated first.",
     temenos: "Payoff is driven by SIMULATION.RUNNER → Lending-Calculate-Payoff; prepayment charge as an activity or periodic-rule charge.",
     related: ["loandisburse", "lpb2payoff", "acctclosure"],
@@ -5064,15 +5076,18 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
     if (mode === "deep") {
       if (c.how) s.push(`How it works. ${c.how}`);
       if (c.example) s.push(`For example. ${c.example}`);
+      if (c.figure) s.push(`Worked example. ${c.figure}`);
       if (c.why) s.push(`Why banks use it. ${c.why}`);
       if (c.temenos) s.push(`In Temenos. ${c.temenos}`);
       if (c.memory) s.push(`Memory trick. ${c.memory}`);
     } else if (mode === "simply") {
       if (c.simple) s.push(c.simple);
       if (c.example) s.push(`If you saw it in a real bank. ${c.example}`);
+      if (c.figure) s.push(`In numbers. ${c.figure}`);
     } else {
       if (c.simple) s.push(c.simple);
       if (c.example) s.push(`For example. ${c.example}`);
+      if (c.figure) s.push(`Worked example. ${c.figure}`);
       if (c.why) s.push(`This matters because. ${c.why}`);
       if (c.memory) s.push(`To remember it. ${c.memory}`);
     }
@@ -5135,6 +5150,14 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
         <div className="mt-6 space-y-4">
           {c.how && <Field label="How it works">{c.how}</Field>}
           <Field label="Real-world example">{c.example}</Field>
+          {c.figure && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-amber-700 mb-1.5">
+                <Calculator size={13} /> Worked example
+              </div>
+              <p className="text-sm leading-relaxed text-amber-900">{withMono(c.figure)}</p>
+            </div>
+          )}
           <Field label="Why banks use it">{c.why}</Field>
           <Field label="How Temenos relates to it">{c.temenos}</Field>
           <Field label="Memory trick">{c.memory}</Field>
@@ -5148,6 +5171,21 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">If you saw it in a real bank</div>
             <p className="text-slate-700 leading-relaxed">{c.example}</p>
           </div>
+          {c.figure && (
+            <div className="mt-3 rounded-lg bg-amber-50 p-4">
+              <div className="text-xs font-medium uppercase tracking-wide text-amber-700 mb-1">In numbers</div>
+              <p className="text-amber-900 leading-relaxed">{withMono(c.figure)}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {c.figure && mode !== "deep" && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-amber-700 mb-1.5">
+            <Calculator size={13} /> Worked example
+          </div>
+          <p className="text-sm leading-relaxed text-amber-900">{withMono(c.figure)}</p>
         </div>
       )}
 
