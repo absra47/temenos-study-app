@@ -3559,7 +3559,7 @@ const CONCEPTS = {
   tftORHandsOn: {
     title: "Hands-On: Loan & Deposit Origination Parameters",
     simple: "Practice: using a product already built in Product Builder, configure full loan origination parameters (group loans, SLA escalation, expiry, stage requirements, checklist) and deposit origination parameters (prospects, proof-of-funds threshold, approval skip).",
-    example: "Loan practice (Practice 1): Group Allow Yes, Group Amount and Group Term both Flexible (so members share evenly but changes are permitted); SLA breaches escalate to the Branch Operations Manager; applications expire after 2 days of inactivity; every stage Required except Application Input (Optional) and Credit Check (Not Required); delinquent and written-off customers still allowed to apply, with overrides; checklist items configured for Application Input, Credit Assessment and Review/Approval.",
+    example: "Loan practice (Practice 1): Group Allow Yes, Group Amount and Group Term both Flexible (so members share evenly but changes are permitted); SLA breaches escalate to the operations manager; applications expire after 2 days of inactivity; every stage Required except Collateral Input (Optional) and Credit Check (Not Required); delinquent and written-off customers still allowed to apply, with overrides; checklist items configured for Application Input, Credit Assessment and Review/Approval.",
     why: "Combining both a Loan and a Deposit exercise in one hands-on forces the same underlying pattern — Group/General Parameters, Workflow, SLA, Checklist — to be applied twice against two different sets of business rules.",
     how: "Path: Administration > Products > Loan Origination / Deposit Origination > Manage Origination. Deposit practice (Practice 2): Prospects Allowed Yes; proof of funds (Documents Required for All Amounts / GIC.CHECKLIST.MASTER Applicable Amount) required from USD 50,000; Term Change Break-Rule Override; Skip Approval for Authorized Users Yes (approval stage skipped whenever the deposit amount is within the origination user's own approval limit); SLA breaches escalate to the Branch Operations Manager; applications expire after 3 days of inactivity.",
     memory: "Loan practice: Group Flexible + stage requirements + checklist. Deposit practice: Prospects + proof-of-funds threshold + Skip Approval.",
@@ -3654,8 +3654,8 @@ const CONCEPTS = {
   // ---- Section 7: Credit Scoring Hands-On ----
   tftCSHandsOn: {
     title: "Hands-On: Building a Credit Score Card",
-    simple: "Practice: using six data types (Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears), build a full score card totalling 100 points, plus a matching recommended-limit table that never exceeds the product's maximum loan amount.",
-    example: "Solution 'PersonalLoan' Score Data lists all six data types. On the Score Card: Age <18 → Fx Score -100 (automatic fail); Age 18–65 → 10. Gender Female → 5; Male → 15. NoOfGuarantors ≥2 → 10; <2 → 5. NetIncome ≥2000 → 15; <2000 → 10. TotalCountArrears = 0 → 20; ≤2 → 5. StressRatio ≤40 → 10 or 20 depending on band. Recommended limits: Upto Score 49 → 0.00; 50 → 5,000.00; 70 → 7,000.00; REST → 10,000.00.",
+    simple: "Practice: using seven data types (Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears, StressRatio), build a full score card totalling 100 points, plus a matching recommended-limit table that never exceeds the product's maximum loan amount.",
+    example: "Solution 'PersonalLoan' Score Data lists all seven data types. On the Score Card: Age <18 → Fx Score -100 (automatic fail); Age 18–65 → a positive score. Gender Female vs Male scored differently. NoOfGuarantors ≥2 scores higher than <2. NetIncome ≥2000 scores higher than <2000. TotalCountArrears = 0 scores highest, decreasing as arrears rise. StressRatio below the bank's threshold scores higher than above it. Recommended limits: Upto Score 49 → 0.00; 50 → 5,000.00; 70 → 7,000.00; REST → 10,000.00.",
     why: "Deliberately assigning -100 for under-18 applicants guarantees automatic failure since the card's total is only 100 — the same 'unbeatable negative score' workaround used for any hard eligibility rule that credit scoring itself should enforce.",
     how: "Path: Administration > Products > Scoring & Profiling > Score Cards Data / Score Cards / Score Card Limits — New Data Type, New Score Card, New Score Card Limits. Verify the recommended limit table's top band never exceeds what the underlying loan product actually allows to be disbursed.",
     memory: "-100 for a disqualifying condition = guaranteed fail against a 100-point total. Score Limit's top band must respect the product's own maximum amount.",
@@ -3999,6 +3999,89 @@ const LABS = [
     verify: "The selected customers now show the new Account Officer.",
     note: "FI module only — SG.BA.CHANGE.DAO and the FI File Upload path are not in the classic Model Bank; run this on the FI Transact build.",
     related: ["dfe", "fileuploadproc", "fileuploadtables", "bulkao"],
+  },
+];
+
+// ---- Practice Lab: scenario-based configuration exercises, straight from the
+// trainer decks' "Practice N" hands-on slides — a business requirement list,
+// then the worked solution as it actually appears on the "Practice N - Solution"
+// slide. Different from LABS (click-path sandbox drills) and from quiz (recall
+// MCQs about the process) — this is "translate requirements into configuration."
+const SCENARIOS = [
+  {
+    id: "scn-loanOriginParams", courseId: "tft-day3", section: "tftD3-4",
+    title: "Configure: Loan Origination Parameters",
+    source: "03-3.1 Hands-on – Common Origination Parameters, Practice 1 (Loans)",
+    brief: "Using the product you created in Product Builder, configure loan origination parameters via Administration > Products > Loan Origination > Manage Origination.",
+    requirements: [
+      "Group loan processing is enabled.",
+      "Group loan amount and term are always even among group members.",
+      "SLA breaches are escalated to the operations manager.",
+      "Loan applications would expire after 2 days of inactivity.",
+      "All origination stages are required except for Collateral Input, which is optional, and Credit Check, which is not required.",
+      "Loan applications are allowed for customers with delinquent and written-off loans, with overrides.",
+      "Checklist items are set up for the Application Input, Credit Assessment and Review/Approval stages.",
+    ],
+    solution: [
+      { field: "General Parameters — Group Allow", value: "Yes" },
+      { field: "General Parameters — Group Amount", value: "Flexible", note: "Divides evenly by default but still allows user redistribution — matches 'always even among group members.'" },
+      { field: "General Parameters — Group Term", value: "Flexible" },
+      { field: "General Parameters — Expiry Before/After Approval", value: "5 / 2 days" },
+      { field: "General Parameters — Allow Delinquent / Allow Written Off", value: "Yes / Yes", note: "With override messages, since overrides were required rather than an outright block." },
+      { field: "Workflow Parameters — Stage Option, Collateral Input", value: "Optional" },
+      { field: "Workflow Parameters — Stage Option, Credit Check", value: "Not Required" },
+      { field: "Workflow Parameters — every other stage", value: "Required" },
+      { field: "SLA Parameters — SLA Escalation", value: "A PW.PARTICIPANT record for the Operations Manager role" },
+      { field: "Loan Stage Checklist — Application Input", value: "Item 1 'Positive Identification' + Item 23 'Declaration of Health', applicable to Main Holder, Group Member, Joint Holder, and both Guarantor types" },
+      { field: "Loan Stage Checklist — Credit Assessment & Review/Approval", value: "Checklist items configured at those stages too, following the same Loan Stage Checklist pattern" },
+    ],
+    memory: "Group Amount/Term = Flexible for 'shared evenly, changes allowed.' Blank Stage Option = Required by default — only Collateral Input and Credit Check deviate from that.",
+    related: ["tftORLDAParams", "tftORWorkflowSLA", "tftORChecklist", "tftORHandsOn"],
+  },
+  {
+    id: "scn-depositOriginParams", courseId: "tft-day3", section: "tftD3-4",
+    title: "Configure: Deposit Origination Parameters",
+    source: "03-3.1 Hands-on – Common Origination Parameters, Practice 2 (Deposits)",
+    brief: "Using the deposit product you created in Product Builder, configure deposit origination parameters via Administration > Products > Deposit Origination > Manage Origination.",
+    requirements: [
+      "Application is permitted for prospect customers.",
+      "Proof of funds is required for deposit amounts from USD 50,000 and above.",
+      "An override message is to be displayed if the user amends the defaulted deposit term.",
+      "If the deposit amount is within the approval limit of the origination user, the approval stage is to be skipped.",
+      "SLA breaches are escalated to the branch operations manager.",
+      "Deposit applications would expire after 3 days of inactivity.",
+    ],
+    solution: [
+      { field: "General Parameters — Prospects Allowed", value: "Yes" },
+      { field: "Checklist item 'Evidence of Funds' (GIC.CHECKLIST.MASTER)", value: "Applicable Amount: USD 50,000 (worked example also carried a GBP 40,000 threshold for that currency)", note: "This is what actually triggers proof-of-funds documentation once the deposit reaches the threshold." },
+      { field: "Deposit Stage Checklist — Application Input", value: "Item 1 'Positive Identification' + Item 24 'Evidence of Funds', applicable to Main Holder and Joint Holder" },
+      { field: "General Parameters — Term Change Break-Rule", value: "Override" },
+      { field: "General Parameters — Skip Approval for Authorized Users", value: "Yes", note: "REVIEW.APPROVAL is then never marked Required — it's skipped whenever the amount is within the current user's own approval limit." },
+      { field: "SLA Parameters — SLA Escalation", value: "A PW.PARTICIPANT record for the Branch Operations Manager role" },
+      { field: "General Parameters — Expiry After Approval", value: "3 days" },
+    ],
+    memory: "Proof-of-funds threshold lives on the checklist item (GIC.CHECKLIST.MASTER Applicable Amount), not on the parameters table itself. Skip Approval for Authorized Users = Yes → approval never forced, only ever skipped when in-limit.",
+    related: ["tftORLDAParams", "tftORChecklist", "tftORHandsOn"],
+  },
+  {
+    id: "scn-creditScoreCard", courseId: "tft-day3", section: "tftD3-7",
+    title: "Configure: A Personal Loan Credit Score Card",
+    source: "03-5.1 Hands-on – Credit Scoring Parameters, Practice 1",
+    brief: "Using seven named data types, set up credit scoring for your loan product so the total obtainable score is 100 and the recommended limit never exceeds the maximum amount the product allows.",
+    requirements: [
+      "Data types to use: Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears, StressRatio.",
+      "The total obtainable score across the whole score card must be exactly 100.",
+      "The recommended limit at the top score band must not exceed the maximum amount grantable under the product.",
+    ],
+    solution: [
+      { field: "Score Data ('PersonalLoan')", value: "All seven data types listed, each linked to its SA.DATA.TYPES record (Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears, StressRatio)" },
+      { field: "Score Card — Age", value: "Under 18 scores -100 (guaranteed fail against the 100-point total); 18–65 scores a solid positive weight" },
+      { field: "Score Card — Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears, StressRatio", value: "Each assigned its own weighted score per value/range, all combined with AND across data types and OR across each data type's own value ranges, so the achievable total sums to 100" },
+      { field: "Score Limit ('PersonalLoan')", value: "Upto Score 49 → Rec Limit 0.00; Upto Score 50 → 5,000.00; Upto Score 70 → 7,000.00; REST → 10,000.00" },
+      { field: "Verification", value: "The top Rec Limit band (10,000.00) was checked against the underlying loan product's own Term/Amount conditions to confirm it doesn't exceed what the product allows to be disbursed" },
+    ],
+    memory: "-100 for a disqualifying condition (age <18) is the standard 'guaranteed fail' trick against a 100-point total. AND combines across data types; OR combines within one data type's value ranges.",
+    related: ["tftCSTables", "tftCSScoreCard", "tftCSScoreLimitTxn", "tftCSHandsOn"],
   },
 ];
 
@@ -5443,7 +5526,7 @@ const COURSES = [
         description: "Building a full six-data-type score card and matching recommended-limit table for a personal loan product.",
         concepts: ["tftCSHandsOn"],
         quiz: [
-          q("The hands-on Credit Scoring practice uses which six data types?", ["Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears", "Income, Expenditure, Debt, Collateral, Term, Amount", "Only Age and Income", "Residence, BusinessType, LoanPurpose, CreditIndicator, CollateralValue, NetIncome"], 0, "Solution built under product Id 'PersonalLoan'."),
+          q("The hands-on Credit Scoring practice uses which seven data types?", ["Age, Gender, MaritalStatus, NetIncome, NoOfGuarantors, TotalCountArrears, StressRatio", "Income, Expenditure, Debt, Collateral, Term, Amount, Currency", "Only Age and Income", "Residence, BusinessType, LoanPurpose, CreditIndicator, CollateralValue, NetIncome, Age"], 0, "Solution built under product Id 'PersonalLoan'."),
           q("In the worked solution, an applicant under 18 receives…", ["a low positive score", "Fx Score -100, guaranteeing automatic failure against the 100-point total", "no score at all", "an override message only, no score change"], 1, "The same '-100 workaround' explained in the official quiz's Q1."),
           q("The practice's Score Limit table's top band (REST) must…", ["exceed the product's maximum loan amount", "not exceed the maximum amount the underlying loan product actually allows", "always equal exactly 10,000", "be left at 0.00"], 1, "Verified by checking the recommended limit against the product's own Term/Amount conditions."),
         ],
@@ -6678,6 +6761,111 @@ function LabView({ id, onOpen }) {
   );
 }
 
+function PracticeList({ go }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Practice Lab</h1>
+      <p className="mt-1 text-sm text-slate-500">Scenario-based configuration exercises, straight from the trainer decks' hands-on "Practice" slides. Read the business requirements, think it through, then reveal the worked solution.</p>
+      {COURSES.filter(c => SCENARIOS.some(s => s.courseId === c.id)).map(c => (
+        <div key={c.id} className="mt-6">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">{c.title}</div>
+          <div className="grid grid-cols-2 gap-3">
+            {SCENARIOS.filter(s => s.courseId === c.id).map(s => (
+              <button key={s.id} onClick={() => go({ view: "scenario", scenarioId: s.id })}
+                className="rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
+                <Target size={18} className="text-indigo-600" />
+                <div className="mt-2 font-medium text-slate-900">{s.title}</div>
+                <div className="text-sm text-slate-500 line-clamp-2">{s.brief}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PracticeView({ id, onOpen }) {
+  const s = SCENARIOS.find(x => x.id === id);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => { setRevealed(false); }, [id]);
+  if (!s) return null;
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{s.title}</h1>
+      <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{s.source}</p>
+      <p className="mt-3 text-slate-700 leading-relaxed">{s.brief}</p>
+
+      <div className="mt-3">
+        <SpeakButton
+          getText={() => [
+            s.title, s.brief,
+            "Requirements.", ...s.requirements,
+            revealed ? "Solution." : "",
+            ...(revealed ? s.solution.flatMap(f => [`${f.field}:`, f.value, f.note || ""]) : []),
+          ].filter(Boolean).join(". ")}
+          resetKey={s.id} />
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">Client requirements</div>
+        <ol className="space-y-2">
+          {s.requirements.map((r, i) => (
+            <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-800">
+              <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold ring-1 ring-indigo-100">{i + 1}</span>
+              {withMono(r)}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {!revealed ? (
+        <button onClick={() => setRevealed(true)}
+          className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+          <Target size={15} /> Reveal solution
+        </button>
+      ) : (
+        <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-blue-600 mb-2"><Check size={13} /> Worked solution</div>
+          <div className="space-y-3">
+            {s.solution.map((f, i) => (
+              <div key={i} className="text-sm leading-relaxed">
+                <div className="font-medium text-blue-950">{withMono(f.field)}</div>
+                <div className="text-blue-900">{withMono(f.value)}</div>
+                {f.note && <div className="mt-0.5 text-blue-700/80 text-xs">{withMono(f.note)}</div>}
+              </div>
+            ))}
+          </div>
+          {s.memory && (
+            <div className="mt-4 pt-3 border-t border-blue-200/70">
+              <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-blue-600 mb-1"><Lightbulb size={13} /> Remember it as</div>
+              <p className="text-sm leading-relaxed text-blue-900">{withMono(s.memory)}</p>
+            </div>
+          )}
+          <button onClick={() => setRevealed(false)}
+            className="mt-4 inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-900">
+            <RotateCcw size={12} /> Hide solution, think again
+          </button>
+        </div>
+      )}
+
+      {s.related?.filter(r => CONCEPTS[r]).length > 0 && (
+        <div className="mt-6">
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">Concepts this covers</div>
+          <div className="flex flex-wrap gap-2">
+            {s.related.filter(r => CONCEPTS[r]).map(r => (
+              <button key={r} onClick={() => onOpen({ view: "concept", conceptId: r })}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-surface px-3 py-1 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-800 transition-colors">
+                {CONCEPTS[r].title} <ArrowRight size={12} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================================================
 export default function App() {
   const [progress, setProgress] = usePersistentState("temenos-progress-v1", {
@@ -6734,6 +6922,7 @@ export default function App() {
     { id: "flashcards", label: "Flashcards", icon: BookMarked },
     { id: "diagrams", label: "Diagrams", icon: GitBranch },
     { id: "labs", label: "Sandbox", icon: Wrench },
+    { id: "practice", label: "Practice Lab", icon: Target },
     { id: "uat", label: "UAT", icon: ClipboardList },
     { id: "progress", label: "Progress", icon: BarChart3 },
   ];
@@ -6770,6 +6959,7 @@ export default function App() {
                   || (n.id === "courses" && ["course", "section", "concept", "quiz", "assessment"].includes(nav.view) && !inTraining)
                   || (n.id === "diagrams" && nav.view === "diagram")
                   || (n.id === "labs" && nav.view === "lab")
+                  || (n.id === "practice" && nav.view === "scenario")
                   || (n.id === "uat" && ["uatmodule", "uatcase"].includes(nav.view)));
               return (
                 <button key={n.id} onClick={() => go(n.target || { view: n.id })}
@@ -6861,6 +7051,13 @@ export default function App() {
             <div>
               <button onClick={() => go({ view: "labs" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> Sandbox drills</button>
               <LabView id={nav.labId} onOpen={go} />
+            </div>
+          )}
+          {nav.view === "practice" && <PracticeList go={go} />}
+          {nav.view === "scenario" && (
+            <div>
+              <button onClick={() => go({ view: "practice" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> Practice Lab</button>
+              <PracticeView id={nav.scenarioId} onOpen={go} />
             </div>
           )}
           {nav.view === "uat" && <UatList go={go} uatStatus={uatStatus} resetUat={resetUat} />}
