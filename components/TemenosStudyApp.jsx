@@ -4009,7 +4009,7 @@ const LABS = [
 // MCQs about the process) — this is "translate requirements into configuration."
 const SCENARIOS = [
   {
-    id: "scn-loanOriginParams", courseId: "tft-day3", section: "tftD3-4",
+    id: "scn-loanOriginParams", courseId: "tft-day3", section: "tftD3-4", image: "scn-loanOriginParams",
     title: "Configure: Loan Origination Parameters",
     source: "03-3.1 Hands-on – Common Origination Parameters, Practice 1 (Loans)",
     brief: "Using the product you created in Product Builder, configure loan origination parameters via Administration > Products > Loan Origination > Manage Origination.",
@@ -4039,7 +4039,7 @@ const SCENARIOS = [
     related: ["tftORLDAParams", "tftORWorkflowSLA", "tftORChecklist", "tftORHandsOn"],
   },
   {
-    id: "scn-depositOriginParams", courseId: "tft-day3", section: "tftD3-4",
+    id: "scn-depositOriginParams", courseId: "tft-day3", section: "tftD3-4", image: "scn-depositOriginParams",
     title: "Configure: Deposit Origination Parameters",
     source: "03-3.1 Hands-on – Common Origination Parameters, Practice 2 (Deposits)",
     brief: "Using the deposit product you created in Product Builder, configure deposit origination parameters via Administration > Products > Deposit Origination > Manage Origination.",
@@ -4064,7 +4064,7 @@ const SCENARIOS = [
     related: ["tftORLDAParams", "tftORChecklist", "tftORHandsOn"],
   },
   {
-    id: "scn-creditScoreCard", courseId: "tft-day3", section: "tftD3-7",
+    id: "scn-creditScoreCard", courseId: "tft-day3", section: "tftD3-7", image: "scn-creditScoreCard",
     title: "Configure: A Personal Loan Credit Score Card",
     source: "03-5.1 Hands-on – Credit Scoring Parameters, Practice 1",
     brief: "Using seven named data types, set up credit scoring for your loan product so the total obtainable score is 100 and the recommended limit never exceeds the maximum amount the product allows.",
@@ -4082,6 +4082,194 @@ const SCENARIOS = [
     ],
     memory: "-100 for a disqualifying condition (age <18) is the standard 'guaranteed fail' trick against a 100-point total. AND combines across data types; OR combines within one data type's value ranges.",
     related: ["tftCSTables", "tftCSScoreCard", "tftCSScoreLimitTxn", "tftCSHandsOn"],
+  },
+  {
+    id: "scn-autoLoans", courseId: "tft-day2", section: "tftD2-4", image: "scn-autoLoans",
+    title: "Configure: Auto Loans (Business Loan Product)",
+    source: "02-4.1 Hands-on – Loan Product Builder, Practice 1",
+    brief: "Build a full business loan product — 'Auto Loans' — end to end via the FI product builder wizard, under Product Group 'Business' with no inheritance.",
+    requirements: [
+      "Product Group: Business (Product Parent: Default — no inheritance).",
+      "Name 'Auto Loans', description 'Loans for vehicles used for commercial businesses,' category 3202, currency USD, start date set to today.",
+      "No joint ownership; accounts default to the name 'Auto Loans'; contract anniversary from the Start date; Forward Same Month date convention, negotiable; payment dates adjust by Period.",
+      "Limit processing applies, with a Variable secured limit and Default limit type.",
+      "Default term 36 months, negotiable between 12 months (Error) and 48 months (Override); amount negotiable between 2,000 (Override) and 10,000 (Override); no tranches, not revolving.",
+      "Full disbursement, not automatic on authorisation but negotiable; weekly repayment frequency, negotiable; Constant repayment type; prepayment recalculates the term.",
+      "Reducing-balance principal interest on Current + Overdue Principal Balance, Fixed rate 10% negotiable between 7% (Error) and 15% (Override); a new penalty interest condition at a fixed, non-negotiable 2%.",
+      "Loan Processing Fee (fixed 15, non-negotiable, tied to New Arrangement) and Disbursement Fee (calculated at 0.50 on the transaction, tied to Disbursement); Maintenance, Payoff and Principal Decrease fees not applicable.",
+      "Automatic partial repayment and charge collection from account category 6001; ageing tracked in days with a 2-day grace period, 15-day delinquent threshold, and weekly chaser notices.",
+      "Payoff bills expire after 3 days with dues treated as settled; automatic closure 3 days after balance reaches zero.",
+      "Eligibility: both Individual and Non-Individual customers, age 18 (Error) to 70 (Error), minimum 3-month customer/savings history (Override); initial deposit of 15% of the loan amount blocked on the customer's account, with progressive release and partial blocking as funds become available.",
+    ],
+    solution: [
+      { field: "Product Settings", value: "Product Group Business; Product Parent 'Default – Default parent – no inheritance'" },
+      { field: "Product Details", value: "Name Auto Loans; Description 'Loans for vehicles used for commercial businesses.'; Category 3202 – Auto Loans; Currency USD; Start Date set to build date" },
+      { field: "Customer/Account", value: "Joint Ownership Allowed No; default account Name 'Auto Loans'; Base Date Type Start; Convention Forward Same Month, Negotiable Yes; Date Adjustment Period" },
+      { field: "Limit", value: "Use Limit Yes; Secure Limit Variable; Limit Type Default" },
+      { field: "Term/Amount — Term", value: "Default Term 36M; Negotiable Yes; Minimum 12M/Error; Maximum 48M/Override" },
+      { field: "Term/Amount — Amount", value: "Negotiable Yes; Minimum 2,000/Override; Maximum 10,000/Override; Tranches No; Revolving No" },
+      { field: "Payment Schedule", value: "Disbursement Type Full; Automatic Disbursal No (Negotiable Yes); Repayment Frequency Weekly (Negotiable Yes); Repayment Type Constant; Prepayment Action Recalculate Term" },
+      { field: "Principal Interest", value: "Reducing Balance on Current + Overdue Principal Balance; Fixed 10%, Day Basis E, Accrual Rule LAST; negotiable 7%/Error to 15%/Override" },
+      { field: "Penalty Interest", value: "Calculate Yes; Create New condition 'AutoLoans'; Fixed 2%, not negotiable" },
+      { field: "Charges", value: "Loan Processing Fee — Activity/New Arrangement, Fixed 15, not negotiable. Disbursement Fee — Activity/Disbursement, Calculated, rate 0.50 on Transaction, not negotiable. Maintenance/Payoff/Principal Decrease Fee — Not Applicable" },
+      { field: "Settlement", value: "Disbursal Category 6001; Automatic Repayments Yes, Repayment Rule Partial (negotiable), Repayment Category 6001; Charge Collection uses the same rules, Automatic, Partial, Collection Category 6001" },
+      { field: "Overdue", value: "Ageing Type Days; Bill Settlement Bill Total; Grace 2 days; Delinquent 15 days, weekly chaser notices; Non-Accrual (NAB) at 21 days with twice-weekly notices" },
+      { field: "Payoff/Closure", value: "Payoff Expiry Days 3, Settle Dues Yes; Closure Method Automatic, Closure Type Balance, Closure Period 3D, Posting Restriction 90" },
+      { field: "Eligibility", value: "Customer Type Both; Age 18/Error to 70/Error; Minimum Customer Period & Minimum Saving Months both 3M/Override; Initial Deposit: Product-driven, 15% of loan amount, Breakage Action Error, Progressive Release Yes, Partial Blocking Allowed with Increase on Fund Availability" },
+      { field: "Publish", value: "Proof then Publish, Direct Publish Yes — Proof and Publish Monitor confirms 'Completed Successfully'" },
+    ],
+    memory: "Product Parent 'Default – no inheritance' means every condition is built fresh — nothing inherited from a shared parent.",
+    related: ["tftLPCore", "tftLPTermAmt", "tftLPInterest", "tftLPCharge", "tftLPEligibility", "tftLPHandsOn"],
+  },
+  {
+    id: "scn-autoLoansAmend", courseId: "tft-day2", section: "tftD2-4", image: "scn-autoLoansAmend",
+    title: "Amend: Auto Loans Term/Amount Conditions",
+    source: "02-4.1 Hands-on – Loan Product Builder, Practice 2",
+    brief: "Using Administration > Products > Loan Products > Classic Product Builder > Product Conditions, amend the published Auto Loans product's Term/Amount (TERM.AMOUNT) condition directly in AA — the post-publish maintenance route, since the wizard itself is create-only.",
+    requirements: [
+      "Increase the maximum product term.",
+      "Set a default product amount.",
+    ],
+    solution: [
+      { field: "TERM.AMOUNT — MAXIMUM (amount restriction)", value: "15,000, Override — raised from the original 10,000" },
+      { field: "TERM.AMOUNT — MAXPERIOD (term restriction)", value: "48M, Override" },
+      { field: "TERM.AMOUNT — MINPERIOD (term restriction)", value: "12M, Error (unchanged)" },
+      { field: "TERM.AMOUNT — MINIMUM (amount restriction)", value: "2,000, Override (unchanged)" },
+      { field: "TERM.AMOUNT — Amount", value: "10,000 — the newly set default product amount" },
+    ],
+    memory: "This is the AA Core product builder route — matches the concept that Term/Amount can only be changed post-publish via the Classic Product Builder, not the wizard.",
+    related: ["tftLPMaintain", "tftLPTermAmt", "tftLPHandsOn"],
+  },
+  {
+    id: "scn-targetSavings", courseId: "tft-day2", section: "tftD2-7", image: "scn-targetSavings",
+    title: "Configure: Target Savings",
+    source: "02-5.1 Hands-on – Savings Plans Product Builder, Practice 1",
+    brief: "Your client has presented you with the following set of requirements for their new Target Savings product, to be introduced in the market as soon as possible. Configure the product using the FI product builder.",
+    requirements: [
+      "Regular deposit between 100 and 1000 biweekly for a fixed term of 18 months. The customer may cancel the contract free of penalties during the first 5 days.",
+      "The product attracts a fixed but non-negotiable interest rate of 2%. Interest is to be paid out every month, subject to withholding tax. Alternate interest is not applicable.",
+      "For regular and timely deposits, a bonus of 0.5% will be paid out on maturity date on condition that no more than 2 deposit payments become overdue. Else, bonus is to be waived.",
+      "If the deposit contract is terminated before maturity date, an early redemption fee of 1% of the deposit amount will be applied.",
+      "Partial withdrawals may be allowed at USD 10 per withdrawal.",
+      "For every missed payment, a penalty of USD 5 is applicable. An expected payment will be considered overdue if late for 2 days.",
+      "The deposit is to be funded manually through cash, cheque or account transfers but interest, fees and other proceeds are to be paid out automatically.",
+      "Deposit accounts to be closed automatically 3 days after zero balance.",
+    ],
+    solution: [
+      { field: "Product Settings", value: "Name TargetSav; Notice Processing unchecked; Description 'Target Savings'; Category 6500 – Target Sav; Currency GBP" },
+      { field: "Customer/Account", value: "Base Date Type Agreement; Convention Forward, not negotiable; Date Adjustment Period" },
+      { field: "Term/Amount — Term", value: "Default Term 18M, Negotiable No; Cooling Period 5D", note: "Req. 1 — fixed 18-month term, 5-day free cancellation." },
+      { field: "Term/Amount — Amount", value: "Negotiable Yes; Minimum 100/Override; Maximum 1000/Override", note: "Req. 1 — deposit between 100 and 1000." },
+      { field: "Payment Schedule — Savings Plan Settings", value: "Deposit Frequency Bi-weekly, Negotiable Yes", note: "Req. 1 — biweekly deposits." },
+      { field: "Deposit Interest", value: "Calculation Source CURACCOUNT; Fixed rate 2%, Rate Negotiable No; Day Basis E, Accrual Rule FIRST", note: "Req. 2 — fixed, non-negotiable 2%; no floating/alternate interest defined." },
+      { field: "Payment Schedule — Interest & Bonus Settings", value: "Interest Method Pay, Interest Frequency Monthly, Frequency Negotiable Yes; Bonus method Pay", note: "Req. 2 — interest paid out monthly." },
+      { field: "Tax", value: "Applied Yes; Tax Property CRINTEREST; Tax Condition WHT", note: "Req. 2 — interest subject to withholding tax." },
+      { field: "Charge — BONUS", value: "Charge Link Schedule, Date Maturity Date; Calculated, Calculation Source Deposit Amount, Rate 0.5", note: "Req. 3 — 0.5% bonus paid at maturity." },
+      { field: "Charge — BONUSRESTRICT", value: "Charge Link Restriction, Restriction 'Maximum No. Of Delinquent Payments', Number 2, Charge Action Waive", note: "Req. 3 — bonus waived once more than 2 payments are overdue." },
+      { field: "Charge — PRECLOSUREFEE", value: "Charge Link Restriction, Restriction 'Early Redemp. After Cooling Period'; Calculated, Calculation Source Deposit Amount, Rate 1", note: "Req. 4 — 1% early redemption fee." },
+      { field: "Charge — WITHDRAWALFEES", value: "Charge Link Restriction, Restriction 'Withdrawal After Cooling Period'; Fixed, Charge Amount 10", note: "Req. 5 — USD 10 per partial withdrawal." },
+      { field: "Charge — DEPAGEINGFEE", value: "Charge Link Activity, Linked Activity Overdue Payment; Fixed, Charge Amount 5", note: "Req. 6 — USD 5 penalty per missed payment." },
+      { field: "Overdue", value: "Delinquent Days/Bills 2", note: "Req. 6 — late by 2 days = overdue." },
+      { field: "Settlement — Deposit Payout", value: "Automatic Payout Yes, Negotiable Yes, Payout Category set", note: "Req. 7 — proceeds paid out automatically." },
+      { field: "Settlement — Deposit Funding", value: "Automatic Funding No, Negotiable Yes, Funding Rule None", note: "Req. 7 — funded manually (cash/cheque/transfer), not auto-funded." },
+      { field: "Closure", value: "Closure Method Automatic; Closure Type Balance; Closure Period 3D", note: "Req. 8 — auto-closed 3 days after zero balance." },
+    ],
+    memory: "Charge conditions map 1:1 onto the 8 requirements — Bonus/BonusRestrict = req 3, PreclosureFee = req 4, WithdrawalFees = req 5, DepAgeingFee = req 6. Deposit Funding ≠ Deposit Payout — this product is manually funded but automatically paid out.",
+    related: ["tftDSSavingsPlan", "tftDSCharge", "tftDSPaySchedOverdue", "tftDSHandsOn"],
+  },
+  {
+    id: "scn-tangerineSavings", courseId: "tft-day2", section: "tftD2-7", image: "scn-tangerineSavings",
+    title: "Configure: Tangerine Savings",
+    source: "02-6.1 Hands-on – Account Product Builder & Overdraft Facilities, Practice 2",
+    brief: "Your client has presented you with the following set of requirements for their new Tangerine Savings product, to be introduced in the market as soon as possible. Configure the product using the FI product builder. (Worked solution shown under a demonstration product, 'Standard Savings'.)",
+    requirements: [
+      "A voluntary savings account designed for the discerning saver looking to grow their savings. Available to individuals and joint account holders aged 18–65.",
+      "USD 100 minimum balance. If the balance falls below USD 100 at any time, a charge of 0.5% is assessed on the account.",
+      "Three quarterly withdrawals allowed on demand. Interest is waived if more than 3 withdrawals occur in a quarter. Account must never be overdrawn.",
+      "Account is considered dormant if no customer transactions for 12 months. Dormant accounts attract a monthly fee of USD 20. The system should generate chaser advices after 5 days of dormancy, and thereafter monthly.",
+      "Attractive interest rates — central bank rate +0.5% margin for the first USD 1,000 and +1% for the remaining balance. Interest is added to the same account monthly and is subject to withholding tax. These conditions are non-negotiable.",
+      "No other ledger or account maintenance fees.",
+      "Statements available on a quarterly basis.",
+    ],
+    solution: [
+      { field: "Product Settings", value: "Account type Savings Account; Description Standard Savings; Category 6004; Currency GBP" },
+      { field: "Customer/Account", value: "Base Date Type Agreement; Convention Calendar; Generate IBAN No; Passbook No; Balance Availability — Notice Account Product? No", note: "The worked slide shows Joint Ownership 'No' on the demonstration product — for the actual Tangerine Savings requirement (individuals AND joint holders), this should be set to Yes." },
+      { field: "Credit Interest", value: "Apply Credit Interest Yes; Floating rate, margin Add; Tier 1 margin +0.5 up to USD 1,000, next tier +1 on the remainder; Tier Type Level; Index and Margin both not negotiable", note: "Req. 5 — tiered, non-negotiable margin over the central bank floating index." },
+      { field: "Payment Schedule — Credit Interest", value: "Interest Method Capitalise; Interest Negotiable No; Frequency Every 1 Month(s), not negotiable", note: "Req. 5 — interest added monthly." },
+      { field: "Tax", value: "Applied Yes; Tax Property CRINTEREST; Tax Condition WHT", note: "Req. 5 — subject to withholding tax." },
+      { field: "Debit Interest", value: "Apply Debit Interest No" },
+      { field: "Dormancy", value: "Period 12M; Notice Days 5; Notice Frequency Every 1 Month(s); Charge Frequency Every 1 Month(s)", note: "Req. 4 — dormant after 12 months, first chaser at day 5 then monthly." },
+      { field: "Charge — Dormancy Fee", value: "Fixed charge, worked example shows Charge Amount 10", note: "Req. 4 asks for USD 20/month — double-check and adjust this charge amount to 20 to match the actual client requirement; the worked slide's figure is illustrative." },
+      { field: "Charge — Minimum Balance Fee (MINBALFEE)", value: "Charge Link Restriction, Restriction 'Account Balance Below Threshold', Value 100, Balance Type Daily Debit Balance; Calculated, Tier Percentage 0.5", note: "Req. 2 — 0.5% charge once balance falls below 100." },
+      { field: "Charge Selection", value: "Ledger Charges Applicable No; Closure Fee Not Applicable", note: "Req. 6 — no other ledger/maintenance fees." },
+      { field: "Restrictions", value: "Restriction 1 'Minimum Opening Balance', Period Life, Breakage Action Error; Restriction 2 'No Overdraft', Period Life, Breakage Action Error", note: "Req. 3 — account must never be overdrawn." },
+      { field: "Eligibility", value: "Minimum Age 18/Error; Maximum Age 75/Error (adjust to 65/Error to match this product's exact age cap)", note: "Req. 1." },
+      { field: "Statement", value: "Produce statement Yes; Frequency every 3 months (quarterly); Statement if no movement Yes; Descriptive Statement Yes", note: "Req. 7 — quarterly statements." },
+      { field: "Closure", value: "Closure Method Automatic; Closure Type Balance; Closure Period 3D; Online Closure Yes" },
+      { field: "Publish", value: "Proof then Publish, Direct Publish Yes" },
+    ],
+    memory: "Three quarterly withdrawals with interest waived beyond that (req 3) is enforced as a Restriction tied to Credit Interest, not shown in full on the read slides — configure it the same way as the other restriction-linked charges here.",
+    related: ["tftAPOverview", "tftAPChargesRestrict", "tftAPAvailDormancy", "tftAPHandsOn"],
+  },
+  {
+    id: "scn-currentOverdraft", courseId: "tft-day2", section: "tftD2-7",
+    title: "Configure: Current Account Overdraft Facility",
+    source: "02-6.1 Hands-on – Account Product Builder & Overdraft Facilities, Practice 3",
+    brief: "Create a new current account product with a separate application workflow to process overdraft facilities, via Administration > Products > Account Products > Product Groups > Current > Create New Product.",
+    requirements: [
+      "Overdraft limits should permit a minimum of USD 500 and a maximum of USD 5,000, with override messages if the limits are broken.",
+      "Set other conditions as desired.",
+    ],
+    solution: [
+      { field: "Facility Origination Parameters", value: "New Facility Origination Parameters record for the current account product's Overdraft facility (id pattern <PRODUCT>-Overdraft-New)" },
+      { field: "Minimum Overdraft Limit", value: "USD 500, Breakage Action Override" },
+      { field: "Maximum Overdraft Limit", value: "USD 5,000, Breakage Action Override" },
+    ],
+    memory: "This is the lightest of the three Account hands-on exercises — it only fixes the overdraft's min/max limit, leaving everything else to the consultant's judgement ('set other conditions as desired').",
+    related: ["tftAPOverdraftOther", "tftAPHandsOn", "tftORFacilityEligibility"],
+  },
+  {
+    id: "scn-inheritanceGroup", courseId: "tft-day1", section: "tft-4", image: "scn-inheritanceGroup",
+    title: "Configure: A Loan Inheritance Group",
+    source: "02-1.1 Hands-on – Common Product Parameters, Practice 1",
+    brief: "Using Administration > Products > Loan Products (tab) > New Inheritance Group, create a new Inheritance Group record and define its shared conditions via the Shared Condition Builder wizard.",
+    requirements: [
+      "Create the Inheritance Group record for your assigned practice group (e.g. TrnLoan1, currency GBP).",
+      "Define the following shared conditions: Penalty Interest, Settlement, Overdue, Payoff & Closure.",
+      "Check the 'Launch Condition Builder' box and follow the on-screen steps to define each of those conditions.",
+    ],
+    solution: [
+      { field: "Inheritance Group Details", value: "Name 'Agric Loans Inheritance'; Description 'Agric Loans Inheritance'; Product Line LENDING; Currencies USD + GBP; Group Start Date set to build date" },
+      { field: "Shared Conditions tab — which properties are Define Now vs Define Later", value: "Penalty Interest, Settlement, Overdue, Payoff/Closure = Define Now (built by this wizard); Payment Schedule and Eligibility = Define Later (deferred to the child product)" },
+      { field: "Shared Condition Builder — Shared Condition Details", value: "Name AgricLoansInheritance; Currency 1 USD, Currency 2 GBP; Start Date set to build date" },
+      { field: "Shared Condition Builder — Penalty Interest", value: "Fixed Rate 2.00, not negotiable" },
+      { field: "Shared Condition Builder — Payoff/Closure", value: "Payoff Expiry Days 3; Settle Dues Yes" },
+      { field: "Shared Condition Builder — Settlement (Repayment Collection)", value: "Automatic Repayments Yes, negotiable; Repayment Rule Partial, negotiable; Repayment Category 6001" },
+      { field: "Shared Condition Builder — Settlement (Charge Collection)", value: "Same Charge Rules as repayment Yes; Automatic Charges Yes, negotiable; Collection Rule Partial, negotiable" },
+      { field: "Shared Condition Builder — Overdue (Basic/Grace/Delinquent/NAB)", value: "Ageing Type Days, Bill Settlement Bill Total; Grace 3 days; Delinquent status at 18 days with a chaser notice; Non-Accrual Basis status a few days further out with its own chaser notice", note: "The exact chaser-frequency day codes were too small to read reliably on the source slide — configure them to match your institution's own weekday chaser policy." },
+    ],
+    memory: "Only items marked 'Define Now' in the Inheritance Group are presented by the Shared Condition Builder workflow — 'Define Later' items (here, Payment Schedule and Eligibility) are deferred to the child product instead.",
+    related: ["tftInheritGroup", "tftSharedCond", "tftHandsOn1"],
+  },
+  {
+    id: "scn-productGroups", courseId: "tft-day1", section: "tft-4", image: "scn-productGroups",
+    title: "Configure: Loan Product Groups (Inherit vs NoInherit)",
+    source: "02-1.1 Hands-on – Common Product Parameters, Practice 2",
+    brief: "Using Administration > Products > Loan Products (tab) > New Product Group, create a Loan Product Group with two parent product codes — one that inherits the shared conditions from Practice 1, one that doesn't — then proof and publish.",
+    requirements: [
+      "Define your Product Group for your assigned practice group (e.g. TrnAgric, category range 3751–3760, currency GBP).",
+      "Create two parent product codes: Inherit and NoInherit.",
+      "On the Inherit parent, the following conditions are to be inherited: Penalty Interest, Settlement, Overdue, Payoff and Closure — allocate the shared conditions created in the previous exercise.",
+      "Proof and publish the record.",
+    ],
+    solution: [
+      { field: "Loan Product Group Details", value: "Name 'Agric Loans'; Description 'Agriculture Loans'; Product Line LENDING; Category range 3400–3448; Currencies USD + GBP; Group Start Date set to build date" },
+      { field: "Parent Product Code 1 — Inherit", value: "'Parent with inheritance'; Customer/Account, Limit and Term/Amount all set to Define Now, each pointing at the shared condition (CUSTOMER/OFFICERS/ACCOUNT, LIMIT, TERM/AMOUNT) built in Practice 1" },
+      { field: "Parent Product Code 2 — NoInherit", value: "'Parent without inheritance'; Customer/Account, Limit and Term/Amount also Define Now, but with fresh (not shared) conditions — plus Payment Schedule and Principal Interest defined fresh too, since those were 'Define Later' items never built centrally" },
+      { field: "Proof & Publish", value: "Run Proof, then Publish, on the AgricLoans product group record" },
+    ],
+    memory: "Both parents look almost identical in the wizard (Customer/Account, Limit, Term/Amount all 'Define Now') — the real difference is which underlying condition each one actually resolves to: the Inherit parent reuses Practice 1's shared conditions, the NoInherit parent builds its own from scratch.",
+    related: ["tftGroupCreation", "tftParentCondTab", "tftProofPublish", "tftHandsOn2"],
   },
 ];
 
@@ -6827,6 +7015,15 @@ function PracticeView({ id, onOpen }) {
       ) : (
         <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-blue-600 mb-2"><Check size={13} /> Worked solution</div>
+          {s.image && (
+            <figure className="mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/slides/practice/${s.image}.jpg`} alt={`${s.title} — solution screenshot from the trainer deck`}
+                loading="lazy"
+                className="w-full rounded-lg border border-blue-200 bg-surface" />
+              <figcaption className="mt-1.5 text-xs text-blue-700/70">Screenshot from the trainer deck's solution slide</figcaption>
+            </figure>
+          )}
           <div className="space-y-3">
             {s.solution.map((f, i) => (
               <div key={i} className="text-sm leading-relaxed">
