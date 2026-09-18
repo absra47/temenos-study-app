@@ -4705,7 +4705,7 @@ const CONCEPTS = {
     how: "Standard: every member is individually a bank customer, each with their own record, accounts and loans, in addition to belonging to the group. Abbreviated: only the group itself is a customer; members are tracked as part of that group's membership rather than as independent customer records.",
     memory: "Standard = members ARE customers. Abbreviated = only the group IS a customer, members aren't.",
     temenos: "This is the same Full/Abbreviated Membership distinction from the four Group Types covered in the Product Builder material — 'Standard' and 'Full' are describing the same approach.",
-    related: [],
+    related: ["tftLAGroupApplicant", "tftORFacilityEligibility"],
   },
   tftPOSplits: {
     title: "Payment Obligations & Splits — Tracking Arrears",
@@ -4715,7 +4715,7 @@ const CONCEPTS = {
     how: "Setting the debit rule to Partial only changes how a single run behaves when funds are short — it doesn't reach back to a prior run's shortfall. The Run Incomplete flag just marks a run as not fully collected; it doesn't itself trigger extra collection. Track Arrears is the field that actually links a new obligation run back to a previous incomplete one to try to recover the difference.",
     memory: "Track Arrears = Yes is what makes a new obligation run also chase down a prior run's shortfall, not Partial debit rule or Run Incomplete flags alone.",
     temenos: "Confirmed directly by the trainer's own quiz: 'Set the Track Arrears flag in the payment obligation to yes' was marked correct for exactly this scenario.",
-    related: [],
+    related: ["tftLROverdueRules", "tftLRPrincipalDecrease"],
   },
 };
 
@@ -7559,7 +7559,7 @@ const COURSES = [
       {
         id: "tftFR-1", title: "Cross-Topic Scenario Review",
         description: "Ten scenario-based questions a Pitron Tech Training cohort worked through live, testing judgement across multiple TFT days at once rather than recall of a single topic.",
-        concepts: ["tftPVOverview", "tftPVCollateralExamples", "tftSharedCond", "tftProofPublish", "tftLPSettleOverdue", "tftDATDvsSP", "tftGLMethods", "tftPOSplits"],
+        concepts: ["tftGLMethods", "tftPOSplits"],
         quiz: [
           q("The Standard Provisioning process contains three sub-processes. Which represents the order they're conducted in?", ["Classification, Calculation and Posting", "Calculation, Classification and Posting", "Classification, Posting and Calculation", "Calculation, Posting and Classification", "Posting, Calculation and Classification"], 0, "Confirmed correct in the live quiz. Classification assesses default/loss risk; Calculation turns that into a provision amount; Posting books the accounting entries."),
           q("In Standard Loan Loss Provisioning, collateral values may mitigate provision amounts. Which is true about the Secured-Unsecured mitigation method?", ["If the loan is currently unsecured by collateral, we can secure it before we provision the loan.", "The secured portion of the loan will be provisioned at different rates than the unsecured portion.", "We cannot use mitigation with secured loans, only with unsecured loans.", "The unsecured portion will be provisioned at lower rates than the secured portion.", "The secured portion will be provisioned at normal rates but the unsecured portion at 100%."], 1, "Confirmed correct in the live quiz — SEC.PERCENT and STD.PERCENT apply genuinely different rates to the two portions of the same balance."),
