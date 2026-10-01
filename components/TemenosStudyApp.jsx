@@ -6,9 +6,11 @@ import {
   ChevronLeft, Check, X, RotateCcw, Shuffle, ArrowRight, ArrowLeft,
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
-  Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor, Calculator
+  Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor, Calculator,
+  FileQuestion
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
+import { TESTS } from "./testData";
 
 /* ============================================================================
    TEMENOS STUDY APP — one app, all courses. Slide-depth content.
@@ -8895,6 +8897,163 @@ function DiagramFlow({ id }) {
   );
 }
 
+// ---- Test tab (colleague-contributed quizzes) ------------------------------
+// Tiny markdown renderer: **bold**, `code`, *italic*, blank-line paragraphs, "- " bullets.
+function renderInlineMD(text, keyPrefix) {
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(s => s !== "");
+  return tokens.map((t, i) => {
+    const key = `${keyPrefix}-${i}`;
+    if (t.startsWith("**") && t.endsWith("**")) return <strong key={key}>{t.slice(2, -2)}</strong>;
+    if (t.startsWith("`") && t.endsWith("`")) return <Mono key={key}>{t.slice(1, -1)}</Mono>;
+    if (t.startsWith("*") && t.endsWith("*")) return <em key={key}>{t.slice(1, -1)}</em>;
+    return <span key={key}>{t}</span>;
+  });
+}
+function MD({ text, className }) {
+  if (!text) return null;
+  const blocks = text.split(/\n\n+/);
+  return (
+    <div className={className}>
+      {blocks.map((block, bi) => {
+        const lines = block.split("\n");
+        const isList = lines.every(l => l.trim().startsWith("- "));
+        if (isList) {
+          return (
+            <ul key={bi} className="list-disc pl-5 space-y-1">
+              {lines.map((l, li) => <li key={li}>{renderInlineMD(l.replace(/^-\s*/, ""), `${bi}-${li}`)}</li>)}
+            </ul>
+          );
+        }
+        return (
+          <p key={bi} className={bi > 0 ? "mt-2" : ""}>
+            {lines.map((l, li) => (
+              <React.Fragment key={li}>
+                {li > 0 && <br />}
+                {renderInlineMD(l, `${bi}-${li}`)}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function TestRunner({ test, onFinish }) {
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const questions = test.questions;
+  const cur = questions[i];
+  const done = i >= questions.length;
+
+  if (done) {
+    const correct = answers.filter(a => a.correct).length;
+    const pct = Math.round((correct / questions.length) * 100);
+    return (
+      <div className="max-w-2xl">
+        <h2 className="text-xl font-semibold text-slate-900">{test.title} — results</h2>
+        <div className="mt-4 flex items-center gap-5 rounded-xl border border-slate-200 bg-surface p-5">
+          <Ring pct={pct} />
+          <div>
+            <div className="text-3xl font-semibold text-slate-900">{pct}%</div>
+            <div className="text-sm text-slate-500">{correct} of {questions.length} correct</div>
+          </div>
+        </div>
+        <div className="mt-5 space-y-2">
+          {answers.map((a, idx) => (
+            <div key={idx} className={`rounded-lg border p-3 text-sm ${a.correct ? "border-blue-200 bg-blue-50" : "border-rose-200 bg-rose-50"}`}>
+              <div className="flex items-start gap-2">
+                {a.correct ? <CheckCircle2 size={16} className="text-blue-600 mt-0.5 shrink-0" /> : <X size={16} className="text-rose-600 mt-0.5 shrink-0" />}
+                <div className="min-w-0">
+                  <div className="font-medium text-slate-800">{questions[idx].question}</div>
+                  {!a.correct && <div className="text-slate-600 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
+                  <MD text={questions[idx].explanation} className="text-slate-500 mt-1 text-sm leading-relaxed" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => onFinish(pct, correct, questions.length)}
+          className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+          Done <Check size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <div className="flex items-center justify-between text-sm text-slate-400">
+        <span>{test.title}</span>
+        <span>{i + 1} / {questions.length}</span>
+      </div>
+      <Bar pct={(i / questions.length) * 100} />
+      {cur.deck && <div className="mt-3 text-xs font-mono text-indigo-700 bg-indigo-50 inline-block rounded px-1.5 py-0.5">{cur.deck}</div>}
+      <h2 className="mt-3 text-lg font-medium text-slate-900 leading-snug">{cur.question}</h2>
+      <div className="mt-4 space-y-2">
+        {cur.options.map((opt, oi) => {
+          const chosen = picked === oi;
+          const reveal = picked !== null;
+          const isAns = oi === cur.answer;
+          let cls = "border-slate-200 bg-surface hover:border-slate-300";
+          if (reveal && isAns) cls = "border-blue-300 bg-blue-50";
+          else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50";
+          return (
+            <button key={oi} disabled={reveal} onClick={() => setPicked(oi)}
+              className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors ${cls}`}>
+              <span className="text-slate-800">{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+      {picked !== null && (
+        <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm">
+          <div className={`font-medium ${picked === cur.answer ? "text-blue-700" : "text-rose-700"}`}>
+            {picked === cur.answer ? "Correct" : "Not quite"}
+          </div>
+          <MD text={cur.explanation} className="text-slate-600 mt-2 text-sm leading-relaxed" />
+          <button
+            onClick={() => {
+              setAnswers(a => [...a, { correct: picked === cur.answer }]);
+              setPicked(null);
+              setI(i + 1);
+            }}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+            Next <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TestsList({ go, testScores }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Test</h1>
+      <p className="mt-1 text-sm text-slate-500 max-w-2xl">Supplemental quizzes contributed by a colleague — Product Builder, Deposits & Accounts, and Origination.</p>
+      <div className="mt-5 space-y-3">
+        {TESTS.map(t => {
+          const score = testScores[t.id]?.pct;
+          return (
+            <button key={t.id} onClick={() => go({ view: "testrun", testId: t.id })}
+              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-left hover:border-indigo-300 transition-colors">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 shrink-0"><FileQuestion size={18} /></div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-slate-900">{t.title}</div>
+                <div className="text-sm text-slate-500 line-clamp-1">{t.subtitle}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{t.questions.length} questions{score !== undefined && <span className="text-indigo-700 font-medium"> · Last: {score}%</span>}</div>
+              </div>
+              <ChevronRight size={16} className="text-slate-300 shrink-0" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ---- Sandbox drills ------------------------------------------------------
 // ---- UAT test script viewer -------------------------------------------
 const uatTotal = UAT_MODULES.reduce((n, m) => n + m.cases.length, 0);
@@ -9355,8 +9514,9 @@ function PracticeView({ id, onOpen }) {
 // ============================================================================
 export default function App() {
   const [progress, setProgress] = usePersistentState("temenos-progress-v1", {
-    read: {}, quiz: {}, assess: {}, flash: {}, last: null, uat: {},
+    read: {}, quiz: {}, assess: {}, flash: {}, last: null, uat: {}, test: {},
   });
+  const testScores = progress.test || {};
   const uatStatus = progress.uat || {};
   const setUat = (id, status) => setProgress(p => {
     const next = { ...(p.uat || {}) };
@@ -9410,6 +9570,7 @@ export default function App() {
     { id: "labs", label: "Sandbox", icon: Wrench },
     { id: "practice", label: "Practice Lab", icon: Target },
     { id: "uat", label: "UAT", icon: ClipboardList },
+    { id: "tests", label: "Test", icon: FileQuestion },
     { id: "progress", label: "Progress", icon: BarChart3 },
   ];
 
@@ -9446,7 +9607,8 @@ export default function App() {
                   || (n.id === "diagrams" && nav.view === "diagram")
                   || (n.id === "labs" && nav.view === "lab")
                   || (n.id === "practice" && nav.view === "scenario")
-                  || (n.id === "uat" && ["uatmodule", "uatcase"].includes(nav.view)));
+                  || (n.id === "uat" && ["uatmodule", "uatcase"].includes(nav.view))
+                  || (n.id === "tests" && nav.view === "testrun"));
               return (
                 <button key={n.id} onClick={() => go(n.target || { view: n.id })}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${active ? "bg-indigo-50 text-indigo-800 font-medium" : "text-slate-600 hover:bg-slate-100"}`}>
@@ -9549,6 +9711,18 @@ export default function App() {
           {nav.view === "uat" && <UatList go={go} uatStatus={uatStatus} resetUat={resetUat} />}
           {nav.view === "uatmodule" && <UatModule modId={nav.uatModId} go={go} uatStatus={uatStatus} resetUat={resetUat} />}
           {nav.view === "uatcase" && <UatCase caseId={nav.uatCaseId} go={go} uatStatus={uatStatus} setUat={setUat} />}
+          {nav.view === "tests" && <TestsList go={go} testScores={testScores} />}
+          {nav.view === "testrun" && (() => {
+            const test = TESTS.find(t => t.id === nav.testId);
+            if (!test) return null;
+            return (
+              <div>
+                <button onClick={() => go({ view: "tests" })} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> Test</button>
+                <TestRunner test={test}
+                  onFinish={(pct) => { setProgress(p => ({ ...p, test: { ...(p.test || {}), [test.id]: { pct } } })); go({ view: "tests" }); }} />
+              </div>
+            );
+          })()}
           {nav.view === "progress" && (
             <ProgressView {...{ overallPct, conceptsLearned, coursePct, progress }} />
           )}
