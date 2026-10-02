@@ -614,5 +614,821 @@ export const TESTS = [
         "deck": "02-6.0"
       }
     ]
+  },
+  {
+    "id": "income-stress-global",
+    "title": "Income, Stress Testing & Global Parameters — Quiz",
+    "subtitle": "Decks 03-6.0 & 03-7.0 · Income-Expenditure, Loan Stress Testing and Global Product Parameters",
+    "questions": [
+      {
+        "question": "Where is the stress-testing parameter record stored?",
+        "options": [
+          "`EM.INC.EXP`",
+          "`EB.PARAM` > `ALL-LO.DEBT.TO.INCOME.RATIO.RULES`",
+          "`EM.HOUSEHOLD.INC.TYPE`",
+          "`EM.LO.PARAMETERS`"
+        ],
+        "answer": 1,
+        "explanation": "**b — `EB.PARAM` > `ALL-LO.DEBT.TO.INCOME.RATIO.RULES`.**\n\n`EM.INC.EXP` holds each applicant's actual income and expenditure values; the rules record decides how they are stressed.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "Which table records debts the applicant is *directly* responsible for paying?",
+        "options": [
+          "`EM.SECONDARY.DEBT.TYPE`",
+          "`EM.EXTERNAL.EXP.TYPE`",
+          "`EM.PRIMARY.DEBT.TYPE`",
+          "`EM.HOUSEHOLD.EXP.TYPE`"
+        ],
+        "answer": 2,
+        "explanation": "**c — `EM.PRIMARY.DEBT.TYPE`.**\n\nSecondary debts are those owed through guaranteeing others, e.g. signing as guarantor for a relative or giving a personal guarantee on company debt.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "Which kind of debt does `EM.SECONDARY.DEBT.TYPE` typically describe?",
+        "options": [
+          "Debts the applicant owes directly",
+          "Debts owed by guaranteeing others",
+          "Household living expenses",
+          "Debts of the bank"
+        ],
+        "answer": 1,
+        "explanation": "**b — Debts owed by guaranteeing others.**\n\nThe classifications are fluid, so institutions can use the table as they see fit.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What is the difference between household expenses and external expenses?",
+        "options": [
+          "Household expenses are non-essential; external ones are living costs",
+          "Household expenses are living costs (food, rent, utilities); external expenses are non-household and have no direct impact on subsistence",
+          "They are identical and share one table",
+          "External expenses are only for groups"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Household = living expenses (`EM.HOUSEHOLD.EXP.TYPE`). External = non-household (`EM.EXTERNAL.EXP.TYPE`).\n\nThe line between the two is thin.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "Under *Administration*, where are the income and expenditure parameter tables accessed?",
+        "options": [
+          "Administration > Products > Scoring & Profiling",
+          "Administration > Security > Users",
+          "Administration > Origination > Stages",
+          "Administration > Accounting > Rules"
+        ],
+        "answer": 0,
+        "explanation": "**a — Administration > Products > Scoring & Profiling.**\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "True or false: stress testing is mandatory in every Inclusive Banking implementation.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "answer": 1,
+        "explanation": "**False.** Stress testing is **optional**, though it is a regulatory requirement in some countries.\n\nThis release gives an initial framework that can be expanded.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "In this release, how are stress-testing results used by default?",
+        "options": [
+          "They automatically reject the application",
+          "They are for information, and may also feed credit scoring via the `EM.LO.CS.SA.DATA.MAPPING` table",
+          "They automatically reduce the interest rate",
+          "They are posted as an accounting entry"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Results are informational; a bank may include select fields in credit scoring mapping.\n\nA context enquiry shows the results in the Credit Assessment and Review/Approval stages.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What does the income type entry `HI-WAGE` mean?",
+        "options": [
+          "Household Income – Wage",
+          "High Income – Wage",
+          "Household Investment – Wage",
+          "Hourly Income – Wage"
+        ],
+        "answer": 0,
+        "explanation": "**a — Household Income Wage.**\n\n`HE-FOOD` similarly means Household Expenditure Food.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "An income entry is `HI-WAGE-95-90`. How much of the actual wage is used for testing?",
+        "options": [
+          "95%",
+          "90%",
+          "85.5% (90% of 95%)",
+          "100%"
+        ],
+        "answer": 2,
+        "explanation": "**c — 85.5%.** Two layers of stressing are allowed; here 95% of the income is included, and that is then stressed again to 90% of the result.\n\nA dashed `--` means 100% of the unstressed amount is used.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "An expenditure entry is `HE-FOOD-110-110`. What does it mean?",
+        "options": [
+          "Food expense is reduced by 10% twice",
+          "The food expense is first increased by 10%, then stressed again by 10%",
+          "Food expense is capped at 110",
+          "Only 110 units of food are allowed"
+        ],
+        "answer": 1,
+        "explanation": "**b.** For expenditure, values above 100 *increase* the amount (110 = +10%), the opposite direction to income stressing.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What does setting `DTI Use Current Monthly Payment` to YES do?",
+        "options": [
+          "Excludes the current loan from testing",
+          "Adds the monthly payment from the current application to included expenditure before the DTI check",
+          "Doubles the income",
+          "Switches the test to MSR"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The repayment derived from the current application is added to the expenditure side. If NO, it is excluded.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What is special about the `DTI Stress Income Ratio` field?",
+        "options": [
+          "It stresses only expenditure",
+          "One value stresses all income types, and it is mutually exclusive with per-income-type stressing",
+          "It only works for mortgages",
+          "It must always be 100"
+        ],
+        "answer": 1,
+        "explanation": "**b.** If a value is entered, the user cannot enter stress percentages for individual income types.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What does the DTI Loan Amount Threshold do for non-mortgage loans?",
+        "options": [
+          "Sets the maximum loan amount",
+          "Loans below this amount are not tested",
+          "Sets the minimum interest rate",
+          "Sets the stress percentage"
+        ],
+        "answer": 1,
+        "explanation": "**b.** It holds the loan amount below which testing is not done.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "How does MSR (Mortgage Service Ratio) testing differ from DTI testing?",
+        "options": [
+          "MSR has no income stressing",
+          "Expenditure is limited to the current loan's calculated repayment (automatically included), and the interest rate can be increased via `Stress MSR Repayment Interest`",
+          "MSR tests all loan products",
+          "MSR uses only guarantor income"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Income stressing works the same in both. MSR also raises the interest rate and recalculates the repayment, asking: if rates rise but income does not, can the borrower still pay?\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "Which loan types can test the effect of an interest-rate increase?",
+        "options": [
+          "All loan types",
+          "Mortgage loans only",
+          "Group loans only",
+          "None"
+        ],
+        "answer": 1,
+        "explanation": "**b — Mortgage loans only.** For other loans the income/expenditure items are identified but no rate-rise test applies.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What is the record Id of `EM.INC.EXP` when created inside a loan application?",
+        "options": [
+          "Loan product id",
+          "Customer Number – Loan Application Number",
+          "Group id",
+          "Account number"
+        ],
+        "answer": 1,
+        "explanation": "**b.** It is auto-generated. Records created outside an application use just the customer number.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "What must be set for stress testing calculations to occur?",
+        "options": [
+          "`Create separate income/expenditure per application` = Y in `EB.PARAM > ALL-EM.INCOME.EXPENDITURE`",
+          "`Scoring Required` = No",
+          "Group limits switched on",
+          "Credit check set to Required"
+        ],
+        "answer": 0,
+        "explanation": "**a.** With Y, records are created per loan application; stress testing requires this.\n\n*Source:* `03-6.0 Concept - Income-Expenditure and Loan Stress Testing.pdf`",
+        "deck": "03-6.0"
+      },
+      {
+        "question": "Which table does the Global Product Parameters concept deck describe, with record ID `SYSTEM`?",
+        "options": [
+          "`EM.PRODUCT.PARAMETERS`",
+          "`EM.PRODUCT.GROUP`",
+          "`EM.LO.PARAMETERS`",
+          "`EM.INC.EXP`"
+        ],
+        "answer": 0,
+        "explanation": "**a — `EM.PRODUCT.PARAMETERS`.** It holds miscellaneous values affecting many Inclusive Banking applications, grouped into labelled tabs.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "Why capture savings account categories in the Initial Deposit eligibility section?",
+        "options": [
+          "To pay interest on them",
+          "So origination can check that the borrower has deposited funds to show equity for the loan",
+          "To block guarantor funds",
+          "To compute group limits"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The second section covers the requirement that borrowers have held savings accounts for some time.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "When rescheduling a loan, what does *Amend Original Term* do?",
+        "options": [
+          "Starts a fresh anniversary from today",
+          "Extends or reduces the term using the current term anniversaries (e.g. still the 15th of the month)",
+          "Cancels the loan",
+          "Resets the interest rate"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The alternative, *Define From Today*, drops the existing date frequency and uses today as the new anniversary date.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "What does the source-of-repayment-date setting *Contract Next Due Date* mean?",
+        "options": [
+          "Payments follow product parameters",
+          "The loan reschedules to start on the contract's next due date",
+          "Payments start today",
+          "Payments are suspended"
+        ],
+        "answer": 1,
+        "explanation": "**b.** *Product* means the loan resets according to the product parameters instead.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "If *Term as Number of Payments* is selected, the loan term is defined by…",
+        "options": [
+          "The calendar period from the application",
+          "The number of payments",
+          "The maturity date only",
+          "The customer's age"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Term is not taken from the calendar period in the loan application.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "How are group-loan shadow limits calculated?",
+        "options": [
+          "Fixed bank-wide amount",
+          "Total savings balances of group members × a savings multiplier",
+          "Sum of loans granted",
+          "Guarantor income"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The Group Limit Parameters tab lists savings categories to check, and a second section lists categories used for the Savings Report in the Single Group View.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "What does the Guarantor Parameters tab hold?",
+        "options": [
+          "Guarantor income types",
+          "Product categories checked for accounts that can be blocked to secure loans",
+          "Guarantor scoring rules",
+          "External guarantor Ids"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Customer guarantors may be required to provide accounts that are blocked to secure the loan.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      },
+      {
+        "question": "What does the Savings Multiplier tab configure?",
+        "options": [
+          "Shadow limits for individual customers: category codes, limit multiplier, override/error behaviour and affected loan products",
+          "Group meeting dates",
+          "Interest tiers",
+          "Tax rates"
+        ],
+        "answer": 0,
+        "explanation": "**a.** It is the individual-customer equivalent of group shadow limits; affected products go in the Loan Product field.\n\n*Source:* `03-7.0 Concept - Global Product Parameters.pdf`",
+        "deck": "03-7.0"
+      }
+    ]
+  },
+  {
+    "id": "loan-app-1",
+    "title": "Loan Application Processing 1 — Quiz",
+    "subtitle": "Deck 04-1.0 · Application Input, settlement, custom schedules and group applicants",
+    "questions": [
+      {
+        "question": "Which application handles the loan application process through its origination stages?",
+        "options": [
+          "`AA.ARRANGEMENT`",
+          "`EM.LO.APPLICATION`",
+          "`EM.LO.GUARANTOR`",
+          "`SA.SCORE.TXN`"
+        ],
+        "answer": 1,
+        "explanation": "**b — `EM.LO.APPLICATION`.** Whether each stage is required, optional or not required depends on Loan Origination parameter setup.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "What is the correct order of the origination stages?",
+        "options": [
+          "Application Input → Eligibility Check → Guarantor Input → Credit Check → Collateral Input → Credit Scoring → Credit Assessment → Review/Approval → Offer Production → Loan Creation",
+          "Application Input → Credit Scoring → Eligibility Check → Guarantor Input → Collateral Input → Credit Check → Review/Approval → Credit Assessment → Loan Creation → Offer Production",
+          "Eligibility Check → Application Input → Credit Check → Guarantor Input → Credit Scoring → Collateral Input → Credit Assessment → Offer Production → Review/Approval → Loan Creation",
+          "Application Input → Guarantor Input → Eligibility Check → Collateral Input → Credit Check → Credit Scoring → Review/Approval → Credit Assessment → Offer Production → Loan Creation"
+        ],
+        "answer": 0,
+        "explanation": "**a.** Application Input, Eligibility Check, Guarantor Input, Credit Check, Collateral Input, Credit Scoring, Credit Assessment, Review/Approval, Offer Production, Loan Creation.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "Where can origination be accessed from?",
+        "options": [
+          "Only the command line",
+          "The Single Customer View or the dedicated Loan Service Agent page",
+          "Only the Arrangement Overview",
+          "Only the teller screen"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "A customer who belongs to a group is processed as an *Individual* applicant. What happens?",
+        "options": [
+          "It is a group loan anyway",
+          "It is treated as a non-group loan, excluded from group loan reports, and the group limit is neither checked nor updated",
+          "The group limit is reduced",
+          "The loan is blocked"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The Customer Type choice (Group, Individual, Non-Individual) appears only if Loan Origination Parameters allow group application processing.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "What does the Asset class field display on the application?",
+        "options": [
+          "The collateral value",
+          "The worst overdue status of all the customer's existing loans",
+          "The product group",
+          "The credit score"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "For Refinance, Reschedule or Top-up, how is the loan to be amended selected?",
+        "options": [
+          "Typed in the notes field",
+          "Via the *For Arrangement* field dropdown",
+          "It is selected automatically",
+          "By the approver later"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Only one loan action (New Loan / Refinance / Reschedule / Top-up) can be chosen. For a top-up, the value in *Term Requested* becomes the new term.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "Which loan products can be selected at Application Input?",
+        "options": [
+          "Any AA product",
+          "Only loan product or product group records created in Loan Origination Parameters",
+          "Only deposit products",
+          "Only the most recent product"
+        ],
+        "answer": 1,
+        "explanation": "**b.** On selection the system displays the interest rate and currency, and calculates the instalment once Amount and Term are entered.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "A loan product is set for automatic disbursement, but no disbursement account is entered. What happens?",
+        "options": [
+          "The loan is rejected",
+          "An override message says automatic disbursement will be disabled",
+          "Disbursement happens to a default account",
+          "Nothing"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The reverse also applies: for a manual-disbursement product, entering a disbursement account triggers an override saying automatic disbursement will be triggered. An empty account field means the activity is done manually.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "When a checklist item is overridden, what is required?",
+        "options": [
+          "Supervisor password",
+          "A note explaining why",
+          "A new document",
+          "Nothing"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Only items defined as overridable can be overridden. Otherwise the inputter selects an application status code.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "How can an individual loan use a custom payment schedule?",
+        "options": [
+          "Pick *Custom* in Repayment Frequency at Application Input",
+          "Edit AA after loan creation only",
+          "It is not possible",
+          "Use a group loan"
+        ],
+        "answer": 0,
+        "explanation": "**a.** If the product was configured for Custom schedules, *Custom* is defaulted and cannot be changed.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "What happens when the Application Input stage is committed with a custom schedule?",
+        "options": [
+          "A permanent arrangement is created",
+          "A temporary Arrangement is created and the `AA.ARR.PAYMENT.SCHEDULE` opens for negotiation",
+          "The loan is disbursed",
+          "The stage is skipped"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The temporary Arrangement is deleted at Loan Creation, so the substantive Arrangement can be created. The custom schedule is transferred to it.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "In a custom schedule, how can a payment holiday be built?",
+        "options": [
+          "Multi-value the repayment row, with each row having a relative start date, period and optional number of payments",
+          "Not possible",
+          "Set interest to zero",
+          "Use a charge"
+        ],
+        "answer": 0,
+        "explanation": "**a.** E.g. start one month after disbursement and collect 3 payments, take a 4-month holiday, then restart from month 8.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "What do status codes 103 and 105 do?",
+        "options": [
+          "Reject the application",
+          "Put the origination process on hold until the expected actions are completed",
+          "Approve the application",
+          "Delete the record"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Code behaviours are parameterised in `EM.LO.APPLICATION.STATUS`.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      },
+      {
+        "question": "How is the loan amount treated for a group application?",
+        "options": [
+          "Each member borrows the full amount",
+          "It is shared among group members",
+          "Only the leader borrows",
+          "Group amount is ignored"
+        ],
+        "answer": 1,
+        "explanation": "**b.** On entering Group Id, origination shares the amount, defaults the term for each member and calculates each instalment. Settlement accounts default if category codes exist in the Settlement Product Condition.\n\n*Source:* `04-1.0 Concept - Loan Application Processing 1.pdf`",
+        "deck": "04-1.0"
+      }
+    ]
+  },
+  {
+    "id": "loan-app-2",
+    "title": "Loan Application Processing 2 — Quiz",
+    "subtitle": "Deck 04-2.0 · Eligibility, Guarantor, Credit Check, Collateral and Credit Scoring",
+    "questions": [
+      {
+        "question": "What does each eligibility result show?",
+        "options": [
+          "Pass or Fail only",
+          "Passed, or Warning with a message if the criteria are not met",
+          "A numeric score",
+          "Approved or Rejected"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Criteria come from `EM.PRDL.ELIGIBILITY`. Failures raise an override or an error message, depending on the eligibility parameterisation.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "If eligibility fails because of wrong values in other tables, what can the user do?",
+        "options": [
+          "Nothing",
+          "Put processing on hold and correct them, or step back to a previous stage (one step at a time)",
+          "Delete the application",
+          "Skip the stage"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "How are eligibility checks done for a group applicant?",
+        "options": [
+          "Only for the group leader",
+          "Origination lists every member and checks each, showing results per member",
+          "Only for the group as a whole",
+          "Not required"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "A guarantor who is not a bank customer is created in which table?",
+        "options": [
+          "`EM.LO.GUARANTOR`",
+          "`EM.LOAN.GUARANTORS`",
+          "`AC.LOCKED.EVENTS`",
+          "`ELO.GU.DOCUMENT`"
+        ],
+        "answer": 0,
+        "explanation": "**a — `EM.LO.GUARANTOR`**, via *New External Guarantor*. Its Id always begins with the letter **G**.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "What is the record Id format of `EM.LOAN.GUARANTORS`?",
+        "options": [
+          "CustomerNumber-LoanOriginationId",
+          "G + number",
+          "Account number",
+          "Loan product id"
+        ],
+        "answer": 0,
+        "explanation": "**a.** The record opens when the user clicks *Add Loan Guarantors*, and is checked against `EM.LO.GUARATOR.PARAM`.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "How are internal guarantors' funds secured?",
+        "options": [
+          "Blocked using `AC.LOCKED.EVENTS` with an expiry date matching the loan maturity",
+          "Moved to the loan account",
+          "Not secured",
+          "Charged a fee"
+        ],
+        "answer": 0,
+        "explanation": "**a.** Funds can be released when the lock expires. There can be several locks on a guarantor's account, each with its own expiry.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "Which accounts are offered for an internal guarantor to select?",
+        "options": [
+          "Any account",
+          "The customer's accounts in the category code defined in `EM.PRODUCT.PARAMETERS`",
+          "Only current accounts",
+          "Only loan accounts"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The system also shows how much will be blocked, depending on whether blocking is equal or proportional among guarantors.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "For an external guarantor, what does the displayed 'amount to block' mean?",
+        "options": [
+          "It is blocked in a bank account",
+          "It is for information only, since there is no account to block",
+          "It is charged as a fee",
+          "It is added to the loan"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "How are non-cash guarantees such as chattels or promissory notes handled?",
+        "options": [
+          "Not allowed",
+          "Scanned and stored using the scan icon; one document can guarantee more than one loan",
+          "Entered as a charge",
+          "Converted to cash"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Scanned documents are viewed in origination through the `ELO.GU.DOCUMENT` enquiry link. The guarantor record must be set to **Active** to be valid.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "What does `EACH.MEMB.GUARANTOR` = Yes do on a group application?",
+        "options": [
+          "Skips guarantors",
+          "Displays all group members so guarantor details are entered per member",
+          "Makes the leader the guarantor",
+          "Blocks the group account"
+        ],
+        "answer": 1,
+        "explanation": "**b.**\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "When can the Credit Check stage be marked Not Required?",
+        "options": [
+          "Never",
+          "When there is no local credit bureau interface; set in `EM.LO.PARAMETERS`",
+          "When the loan is small",
+          "When it is a group loan"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Credit check applies when the client has plugged a credit bureau interface into origination.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "Which collaterals are available for selection at Collateral Input?",
+        "options": [
+          "All collaterals in the bank",
+          "Only collaterals relevant to the applicants in the application (all members' for group loans)",
+          "Only new collaterals",
+          "Only the guarantor's"
+        ],
+        "answer": 1,
+        "explanation": "**b.** *New Collateral* opens a window running through `COLLATERAL.RIGHT` and then `COLLATERAL`. Once committed, they can be selected without leaving origination.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "By default, who is credit scoring required for?",
+        "options": [
+          "Guarantor only",
+          "The applicant = Yes (depending on parameters); the guarantor = No",
+          "Both = Yes",
+          "Neither"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Guarantors can be scored only if they are existing customers and the user changes the default to Yes. Groups list each member.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "Credit scoring is *Optional* in `EM.LO.PARAMETERS`. What is *Perform Check?* set to?",
+        "options": [
+          "Yes",
+          "No",
+          "Blank, so the user sets it to Yes to score or commits to skip",
+          "Hidden"
+        ],
+        "answer": 2,
+        "explanation": "**c.**\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "Why create Income and Expenditure records per loan application?",
+        "options": [
+          "An existing record may be outdated since the applicant's situation could have changed",
+          "It is cheaper",
+          "It is required for guarantors",
+          "It speeds up COB"
+        ],
+        "answer": 0,
+        "explanation": "**a.** Otherwise the existing record must be updated before scoring. The score data (`SA.SCORE.DATA`) and score card (`SA.SCORE.CARD`) can use this profile.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      },
+      {
+        "question": "After committing credit scoring, where does the score get calculated?",
+        "options": [
+          "In `EM.LO.APPLICATION` directly",
+          "In `SA.SCORE.TXN`, after selecting the Product Name (product, product group or SYSTEM)",
+          "In the Arrangement",
+          "At Loan Creation"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The score is calculated when the user commits the record. The Product Name dropdown shows only records relevant to the product applied for.\n\n*Source:* `04-2.0 Concept - Loan Application Processing 2.pdf`",
+        "deck": "04-2.0"
+      }
+    ]
+  },
+  {
+    "id": "loan-app-3",
+    "title": "Loan Application Processing 3 — Quiz",
+    "subtitle": "Deck 04-3.0 · Credit Assessment, Approval, Offer Production and Loan Creation",
+    "questions": [
+      {
+        "question": "What is the Credit Assessment stage's main purpose?",
+        "options": [
+          "Disburse the loan",
+          "The credit officer reviews the results so far, using the Customer/Group Loan History report, and makes a recommendation",
+          "Print offer documents",
+          "Collect fees"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The loan history report shows past loans, late payments, and any provisioned or written-off amounts.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "Is the approver bound by the credit assessment officer's recommendation?",
+        "options": [
+          "Yes",
+          "No, the approver can decide differently",
+          "Only for group loans",
+          "Only above a threshold"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The recommendation passes to the approving officer, who takes the final decision.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "What is different about the application status at Review/Approval?",
+        "options": [
+          "It is defaulted to Approved",
+          "It is not defaulted; the approver must deliberately select a status",
+          "It is hidden",
+          "It is set by the system from the score"
+        ],
+        "answer": 1,
+        "explanation": "**b.** This avoids mistakes and doubts about the decision.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "The approver leaves *Approved Amount* and *Approved Term* blank. What happens?",
+        "options": [
+          "The application fails",
+          "The system assumes the amount and term applied for",
+          "Zero is approved",
+          "Recommended values are used"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The approver may approve a different amount/term than recommended or applied for.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "When is the Notes field mandatory at approval?",
+        "options": [
+          "Always",
+          "When the approver declines or selects *Client Withdrawal*",
+          "For group loans",
+          "Never"
+        ],
+        "answer": 1,
+        "explanation": "**b.** The reasons must be recorded. *Decision By* defaults to the current officer's account officer code.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "What must be configured for approval deal slips to print?",
+        "options": [
+          "Nothing",
+          "The Other Parameters tab of the Origination Product Parameters table",
+          "The guarantor table",
+          "The SMS group"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Deal slips are useful where physical signatures or credit committee signatures are required.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "True or false: all members of a group must be approved for the same amount and term.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "answer": 1,
+        "explanation": "**False.** Amounts and terms can differ per member, and the approver can approve different values or leave the fields blank to assume the applied ones.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "How are loan offer documents produced?",
+        "options": [
+          "Typed manually",
+          "Via the Document Output module, prepopulated from Loan Origination product parameters, and stored in the SCV Documents tab",
+          "Emailed by the bank",
+          "By COB"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Only the loan application document template is included in the model bank. The repayment start date is calculated automatically but can be amended.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "What happens at Loan Creation for a product set up for automatic disbursement?",
+        "options": [
+          "Only the arrangement is created",
+          "On commit, origination creates and disburses the loan (all members' loans for groups)",
+          "The loan waits for teller disbursement",
+          "The offer is reprinted"
+        ],
+        "answer": 1,
+        "explanation": "**b.** Loan Creation is the final origination stage.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "How is a loan for manual disbursement identified?",
+        "options": [
+          "The Disburse Account field is empty; SCV Portfolio shows status *Not Disbursed* with commitment = approved amount and principal = zero",
+          "It has a red flag",
+          "It has no arrangement",
+          "It is a group loan"
+        ],
+        "answer": 0,
+        "explanation": "**a.** Disbursing by cash credits the Teller's cash account. An account transfer credits the customer's disbursement account (e.g. savings category 6002). Both debit the applicant's loan account.\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      },
+      {
+        "question": "After a manual disbursement by account transfer is committed, what status does the loan show in SCV?",
+        "options": [
+          "Not Disbursed",
+          "Current",
+          "Pending",
+          "Closed"
+        ],
+        "answer": 1,
+        "explanation": "**b — Current.**\n\n*Source:* `04-3.0 Concept - Loan Application Processing 3.pdf`",
+        "deck": "04-3.0"
+      }
+    ]
   }
 ];
