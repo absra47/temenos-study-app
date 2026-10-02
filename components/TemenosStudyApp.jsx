@@ -8735,9 +8735,9 @@ function QuizRunner({ title, questions, onFinish }) {
               <div className="flex items-start gap-2">
                 {a.correct ? <CheckCircle2 size={16} className="text-blue-600 mt-0.5 shrink-0" /> : <X size={16} className="text-rose-600 mt-0.5 shrink-0" />}
                 <div>
-                  <div className="font-medium text-slate-800">{questions[idx].question}</div>
-                  {!a.correct && <div className="text-slate-600 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
-                  <div className="text-slate-500 mt-0.5">{questions[idx].explanation}</div>
+                  <div className="font-medium text-gray-900">{questions[idx].question}</div>
+                  {!a.correct && <div className="text-gray-700 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
+                  <div className="text-gray-600 mt-0.5">{questions[idx].explanation}</div>
                 </div>
               </div>
             </div>
@@ -8765,8 +8765,8 @@ function QuizRunner({ title, questions, onFinish }) {
           const reveal = picked !== null;
           const isAns = oi === cur.answer;
           let cls = "border-slate-200 bg-surface hover:border-slate-300";
-          if (reveal && isAns) cls = "border-blue-300 bg-blue-50";
-          else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50";
+          if (reveal && isAns) cls = "border-blue-300 bg-blue-50 [&_*]:!text-gray-900";
+          else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50 [&_*]:!text-gray-900";
           return (
             <button key={oi} disabled={reveal} onClick={() => setPicked(oi)}
               className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors ${cls}`}>
@@ -8966,8 +8966,8 @@ function TestRunner({ test, onFinish }) {
               <div className="flex items-start gap-2">
                 {a.correct ? <CheckCircle2 size={16} className="text-blue-600 mt-0.5 shrink-0" /> : <X size={16} className="text-rose-600 mt-0.5 shrink-0" />}
                 <div className="min-w-0">
-                  <div className="font-medium text-slate-800">{questions[idx].question}</div>
-                  {!a.correct && <div className="text-slate-600 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
+                  <div className="font-medium text-gray-900">{questions[idx].question}</div>
+                  {!a.correct && <div className="text-gray-700 mt-0.5">Answer: {questions[idx].options[questions[idx].answer]}</div>}
                   <MD text={questions[idx].explanation} className="text-slate-500 mt-1 text-sm leading-relaxed" />
                 </div>
               </div>
@@ -8997,8 +8997,8 @@ function TestRunner({ test, onFinish }) {
           const reveal = picked !== null;
           const isAns = oi === cur.answer;
           let cls = "border-slate-200 bg-surface hover:border-slate-300";
-          if (reveal && isAns) cls = "border-blue-300 bg-blue-50";
-          else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50";
+          if (reveal && isAns) cls = "border-blue-300 bg-blue-50 [&_*]:!text-gray-900";
+          else if (reveal && chosen && !isAns) cls = "border-rose-300 bg-rose-50 [&_*]:!text-gray-900";
           return (
             <button key={oi} disabled={reveal} onClick={() => setPicked(oi)}
               className={`w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors ${cls}`}>
