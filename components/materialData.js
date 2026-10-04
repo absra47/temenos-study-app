@@ -75,3 +75,18 @@ export const MATERIAL_SECTION = {
   "tftD6-7": [ft("07-1.1 Hands-on - Inclusive Banking Account Application.pdf")],
   "tftD6-8": [ft("07-2.0 Concept - Inclusive Banking Account Maintenance.pdf")],
 };
+
+// Original filenames of the TLC course decks as they appear in the source
+// `materials/TLC course/` folder (byte-identical to public/material/tlc/<id>.pdf).
+// Used when a user picks `materials` as their local folder.
+export const TLC_SOURCE_NAME = {
+  "tlc/fif.pdf": "1. Transact Financial Inclusion Foundation.pdf",
+  "tlc/aalf1.pdf": "2. AA Lending Foundation Part 1.pdf",
+  "tlc/aalf2.pdf": "3. AA Lending Foundation Part 2.pdf",
+  "tlc/aai1.pdf": "4. Transact AA Implementation Part 1.pdf",
+  "tlc/aai2.pdf": "5. Transact AA Implementation Part 2.pdf",
+  "tlc/acbb1.pdf": "6. Transact AA Common Building Blocks Implementation Part 1.pdf",
+  "tlc/acbb2.pdf": "7. Transact AA Common Building Blocks Implementation Part 2.pdf",
+  "tlc/alpb1.pdf": "8. Transact AA Lending Product Building Implementation Part 1.pdf",
+  "tlc/alpb2.pdf": "9. Transact AA Lending Product Building Implementation Part 2.pdf",
+};

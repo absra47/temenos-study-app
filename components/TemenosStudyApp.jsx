@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
 import { TESTS } from "./testData";
-import { MATERIAL_COURSE, MATERIAL_SECTION } from "./materialData";
+import { MATERIAL_COURSE, MATERIAL_SECTION, TLC_SOURCE_NAME } from "./materialData";
 
 /* ============================================================================
    TEMENOS STUDY APP — one app, all courses. Slide-depth content.
@@ -8930,11 +8930,15 @@ const idbGet = async () => { const db = await idbOpen(); return new Promise((res
 const idbSet = async (v) => { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction(LOCAL_STORE, "readwrite"); t.objectStore(LOCAL_STORE).put(v, LOCAL_KEY); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); };
 const localFolderSupported = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
 async function readLocalMaterial(root, rel) {
-  // Accept the material folder itself, or a parent of it (public, or the project root).
-  for (const prefix of ["", "material/", "public/material/"]) {
+  // Accept public/material (or a parent of it), or the source `materials` folder.
+  const candidates = ["", "material/", "public/material/"].map(p => p + rel);
+  const src = TLC_SOURCE_NAME[rel];
+  if (src) candidates.push(`TLC course/${src}`, `materials/TLC course/${src}`);
+  else candidates.push(`materials/${rel}`);
+  for (const path of candidates) {
     try {
       let dir = root;
-      const parts = (prefix + rel).split("/");
+      const parts = path.split("/");
       for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
       const fh = await dir.getFileHandle(parts[parts.length - 1]);
       return URL.createObjectURL(await fh.getFile());
@@ -8999,9 +9003,7 @@ function MaterialViewer({ files, backLabel, onBack }) {
       setLocalSrc(null);
       try { setLocalSrc(await readLocalMaterial(h, cur.rel)); setStatus("found"); }
       catch {
-        const hint = h.name === "materials"
-          ? ` You picked "materials" (the original source dump) — pick "material" inside the project's public folder instead (public/material), it has the renamed/restructured files the app actually looks for.`
-          : ` You picked "${h.name}" — pick the folder literally named "material" inside this project's public folder (public/material), or its parent "public", or the project root.`;
+        const hint = ` You picked "${h.name}" — pick your "materials" folder, or "public/material" (a parent such as the project root also works).`;
         setLocalErr("That file wasn't found in the folder you picked." + hint);
         setStatus("missing");
       }
@@ -9071,7 +9073,7 @@ function MaterialViewer({ files, backLabel, onBack }) {
                   <FileText size={14} /> {localRoot ? "Choose a different folder" : "Choose local material folder"}
                 </button>
               </div>
-              <p className="mt-2 text-xs">Pick the <Mono>public/material</Mono> folder (not the top-level <Mono>materials</Mono> source folder). The browser remembers it; files are read locally and never uploaded.</p>
+              <p className="mt-2 text-xs">Pick your <Mono>materials</Mono> folder (or <Mono>public/material</Mono>). The browser remembers it; files are read locally and never uploaded.</p>
               {localErr && <p className="mt-1 text-xs text-rose-600">{localErr}</p>}
             </div>
           ) : (
