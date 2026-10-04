@@ -8930,11 +8930,17 @@ const idbGet = async () => { const db = await idbOpen(); return new Promise((res
 const idbSet = async (v) => { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction(LOCAL_STORE, "readwrite"); t.objectStore(LOCAL_STORE).put(v, LOCAL_KEY); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); };
 const localFolderSupported = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
 async function readLocalMaterial(root, rel) {
-  let dir = root;
-  const parts = rel.split("/");
-  for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
-  const fh = await dir.getFileHandle(parts[parts.length - 1]);
-  return URL.createObjectURL(await fh.getFile());
+  // Accept the material folder itself, or a parent of it (public, or the project root).
+  for (const prefix of ["", "material/", "public/material/"]) {
+    try {
+      let dir = root;
+      const parts = (prefix + rel).split("/");
+      for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+      const fh = await dir.getFileHandle(parts[parts.length - 1]);
+      return URL.createObjectURL(await fh.getFile());
+    } catch { /* try next prefix */ }
+  }
+  throw new Error("not found");
 }
 
 // ---- Course material (original PDF decks) -----------------------------------
@@ -8982,9 +8988,9 @@ function MaterialViewer({ files, backLabel, onBack }) {
     return () => { cancelled = true; if (blobUrl) URL.revokeObjectURL(blobUrl); };
   }, [src, localRoot]);
 
-  const pickFolder = async () => {
+  const pickFolder = async (forceNew) => {
     try {
-      const h = localRoot || await window.showDirectoryPicker({ id: "tsa-material", mode: "read" });
+      const h = (!forceNew && localRoot) || await window.showDirectoryPicker({ id: "tsa-material", mode: "read" });
       if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
       await idbSet(h);
       setLocalRoot(h);
@@ -9045,10 +9051,20 @@ function MaterialViewer({ files, backLabel, onBack }) {
           Couldn't load <Mono>{cur.label}</Mono> — the file isn't deployed with this site.
           {localFolderSupported() ? (
             <div className="mt-3">
-              <button onClick={pickFolder}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
-                <FileText size={14} /> {localRoot ? "Re-allow access to material folder" : "Choose local material folder"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {localRoot && (
+                  <button onClick={() => pickFolder(false)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                    <FileText size={14} /> Re-allow access to saved folder
+                  </button>
+                )}
+                <button onClick={() => pickFolder(true)}
+                  className={localRoot
+                    ? "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-3 py-1.5 text-sm text-slate-600 hover:border-indigo-300"
+                    : "inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"}>
+                  <FileText size={14} /> {localRoot ? "Choose a different folder" : "Choose local material folder"}
+                </button>
+              </div>
               <p className="mt-2 text-xs">Pick the <Mono>public/material</Mono> folder on this computer. The browser remembers it; files are read locally and never uploaded.</p>
               {localErr && <p className="mt-1 text-xs text-rose-600">{localErr}</p>}
             </div>
