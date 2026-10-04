@@ -8998,7 +8998,13 @@ function MaterialViewer({ files, backLabel, onBack }) {
       setStatus("checking"); // re-run the lookup with the permitted handle
       setLocalSrc(null);
       try { setLocalSrc(await readLocalMaterial(h, cur.rel)); setStatus("found"); }
-      catch { setLocalErr("That file wasn't found in the folder you picked — choose the public/material folder."); setStatus("missing"); }
+      catch {
+        const hint = h.name === "materials"
+          ? ` You picked "materials" (the original source dump) — pick "material" inside the project's public folder instead (public/material), it has the renamed/restructured files the app actually looks for.`
+          : ` You picked "${h.name}" — pick the folder literally named "material" inside this project's public folder (public/material), or its parent "public", or the project root.`;
+        setLocalErr("That file wasn't found in the folder you picked." + hint);
+        setStatus("missing");
+      }
     } catch { /* picker cancelled */ }
   };
 
@@ -9065,7 +9071,7 @@ function MaterialViewer({ files, backLabel, onBack }) {
                   <FileText size={14} /> {localRoot ? "Choose a different folder" : "Choose local material folder"}
                 </button>
               </div>
-              <p className="mt-2 text-xs">Pick the <Mono>public/material</Mono> folder on this computer. The browser remembers it; files are read locally and never uploaded.</p>
+              <p className="mt-2 text-xs">Pick the <Mono>public/material</Mono> folder (not the top-level <Mono>materials</Mono> source folder). The browser remembers it; files are read locally and never uploaded.</p>
               {localErr && <p className="mt-1 text-xs text-rose-600">{localErr}</p>}
             </div>
           ) : (
