@@ -7,10 +7,11 @@ import {
   CheckCircle2, Circle, Target, Brain, Globe, HelpCircle, Lightbulb,
   GraduationCap, ListChecks, Menu, BookMarked, Award, Wrench,
   Volume2, Square, Pause, Play, ClipboardList, Palette, Sun, Moon, Monitor, Calculator,
-  FileQuestion
+  FileQuestion, FileText, Maximize2, Minimize2
 } from "lucide-react";
 import { UAT_MODULES } from "./uatData";
 import { TESTS } from "./testData";
+import { MATERIAL_COURSE, MATERIAL_SECTION } from "./materialData";
 
 /* ============================================================================
    TEMENOS STUDY APP — one app, all courses. Slide-depth content.
@@ -6258,6 +6259,18 @@ const slideImgSrc = (conceptId) => {
   return f && course ? `/slides/${course}/${f}.jpg` : null;
 };
 
+// Source training material: section-level Functional Training decks take priority
+// over the single consolidated TLC-course PDF. See components/materialData.js.
+const encodeMaterialPath = (p) => p.split("/").map(encodeURIComponent).join("/");
+const materialFilesFor = ({ courseId, sectionId }) => {
+  const section = MATERIAL_SECTION[sectionId];
+  if (section && section.length) {
+    return section.map(f => ({ label: f.label, src: `/material/${encodeMaterialPath(f.file)}` }));
+  }
+  const course = MATERIAL_COURSE[courseId];
+  return course ? [{ label: "Course deck", src: `/material/${encodeMaterialPath(course)}` }] : [];
+};
+
 const q = (question, options, answer, explanation) => ({ question, options, answer, explanation });
 
 const COURSES = [
@@ -8540,6 +8553,10 @@ function ConceptView({ conceptId, onOpen, onDone, isRead, mode, setMode }) {
           ))}
         </div>
         <SpeakButton getText={speakText} resetKey={`${conceptId}:${mode}`} />
+        <button onClick={() => onOpen({ view: "material", courseId: conceptCourse[conceptId], sectionId: conceptSection[conceptId], backConceptId: conceptId })}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:border-indigo-300 hover:text-indigo-700">
+          <FileText size={14} /> View course material
+        </button>
       </div>
 
       {slideImgSrc(conceptId) && (
@@ -8893,6 +8910,83 @@ function DiagramFlow({ id }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ---- Course material (original PDF decks) -----------------------------------
+function MaterialViewer({ files, backLabel, onBack }) {
+  const [i, setI] = useState(0);
+  const [status, setStatus] = useState("checking"); // checking | found | missing
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef(null);
+  const cur = files[i];
+  const src = cur?.src;
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("checking");
+    if (!src) { setStatus("missing"); return; }
+    fetch(src, { method: "HEAD" })
+      .then(res => { if (!cancelled) setStatus(res.ok ? "found" : "missing"); })
+      .catch(() => { if (!cancelled) setStatus("missing"); });
+    return () => { cancelled = true; };
+  }, [src]);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else containerRef.current?.requestFullscreen();
+  };
+
+  return (
+    <div ref={containerRef} className={isFullscreen ? "flex h-screen w-screen flex-col bg-slate-50 p-4" : ""}>
+      {!isFullscreen && (
+        <button onClick={onBack} className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"><ChevronLeft size={15} /> {backLabel}</button>
+      )}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2"><FileText size={20} className="text-indigo-600" /> Course material</h1>
+        {files.length > 0 && status === "found" && (
+          <button onClick={toggleFullscreen}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-3 py-1.5 text-sm text-slate-600 hover:border-indigo-300 hover:text-indigo-700 shrink-0">
+            {isFullscreen ? <><Minimize2 size={14} /> Exit full screen</> : <><Maximize2 size={14} /> Full screen</>}
+          </button>
+        )}
+      </div>
+
+      {files.length === 0 && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-5 text-sm text-slate-500">
+          No source material mapped for this section yet.
+        </div>
+      )}
+
+      {files.length > 1 && !isFullscreen && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {files.map((f, idx) => (
+            <button key={idx} onClick={() => setI(idx)}
+              className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${idx === i ? "bg-indigo-600 text-white border-indigo-600" : "bg-surface text-slate-600 border-slate-200 hover:border-slate-300"}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {files.length > 0 && status === "checking" && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
+      {files.length > 0 && status === "missing" && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-5 text-sm text-slate-500">
+          Couldn't load <Mono>{cur.label}</Mono> — the file may be missing from <Mono>public/material</Mono>.
+        </div>
+      )}
+      {files.length > 0 && status === "found" && (
+        <iframe src={src} title={cur.label}
+          className={`mt-4 w-full rounded-xl border border-slate-200 ${isFullscreen ? "flex-1" : ""}`}
+          style={isFullscreen ? undefined : { height: "80vh" }} />
+      )}
     </div>
   );
 }
@@ -9643,6 +9737,11 @@ export default function App() {
                 mode={conceptMode} setMode={setConceptMode}
                 onDone={() => { markRead(nav.conceptId); setProgress(p => ({ ...p, last: nav.conceptId })); }} />
             </div>
+          )}
+          {nav.view === "material" && (
+            <MaterialViewer files={materialFilesFor({ courseId: nav.courseId, sectionId: nav.sectionId })}
+              backLabel={nav.backConceptId ? "Back to concept" : "Back"}
+              onBack={() => nav.backConceptId ? go({ view: "concept", conceptId: nav.backConceptId }) : go({ view: "dashboard" })} />
           )}
           {nav.view === "quiz" && (() => {
             const course = COURSES.find(c => c.id === nav.courseId);
