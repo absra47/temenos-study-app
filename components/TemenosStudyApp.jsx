@@ -6261,14 +6261,16 @@ const slideImgSrc = (conceptId) => {
 
 // Source training material: section-level Functional Training decks take priority
 // over the single consolidated TLC-course PDF. See components/materialData.js.
+// Set NEXT_PUBLIC_MATERIAL_BASE (no trailing slash) to serve the PDFs from external storage.
+const MATERIAL_BASE = process.env.NEXT_PUBLIC_MATERIAL_BASE || "/material";
 const encodeMaterialPath = (p) => p.split("/").map(encodeURIComponent).join("/");
 const materialFilesFor = ({ courseId, sectionId }) => {
   const section = MATERIAL_SECTION[sectionId];
   if (section && section.length) {
-    return section.map(f => ({ label: f.label, src: `/material/${encodeMaterialPath(f.file)}` }));
+    return section.map(f => ({ label: f.label, rel: f.file, src: `${MATERIAL_BASE}/${encodeMaterialPath(f.file)}` }));
   }
   const course = MATERIAL_COURSE[courseId];
-  return course ? [{ label: "Course deck", src: `/material/${encodeMaterialPath(course)}` }] : [];
+  return course ? [{ label: "Course deck", rel: course, src: `${MATERIAL_BASE}/${encodeMaterialPath(course)}` }] : [];
 };
 
 const q = (question, options, answer, explanation) => ({ question, options, answer, explanation });
@@ -8914,6 +8916,27 @@ function DiagramFlow({ id }) {
   );
 }
 
+// ---- Local material folder (File System Access API) -------------------------
+// When the PDFs aren't deployed, the user can point the app at their local
+// public/material folder once; the handle is remembered in IndexedDB.
+const LOCAL_DB = "tsa.material", LOCAL_STORE = "handles", LOCAL_KEY = "root";
+const idbOpen = () => new Promise((res, rej) => {
+  const r = indexedDB.open(LOCAL_DB, 1);
+  r.onupgradeneeded = () => r.result.createObjectStore(LOCAL_STORE);
+  r.onsuccess = () => res(r.result);
+  r.onerror = () => rej(r.error);
+});
+const idbGet = async () => { const db = await idbOpen(); return new Promise((res, rej) => { const r = db.transaction(LOCAL_STORE).objectStore(LOCAL_STORE).get(LOCAL_KEY); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); };
+const idbSet = async (v) => { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction(LOCAL_STORE, "readwrite"); t.objectStore(LOCAL_STORE).put(v, LOCAL_KEY); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); };
+const localFolderSupported = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
+async function readLocalMaterial(root, rel) {
+  let dir = root;
+  const parts = rel.split("/");
+  for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+  const fh = await dir.getFileHandle(parts[parts.length - 1]);
+  return URL.createObjectURL(await fh.getFile());
+}
+
 // ---- Course material (original PDF decks) -----------------------------------
 function MaterialViewer({ files, backLabel, onBack }) {
   const [i, setI] = useState(0);
@@ -8923,15 +8946,55 @@ function MaterialViewer({ files, backLabel, onBack }) {
   const cur = files[i];
   const src = cur?.src;
 
+  const [localRoot, setLocalRoot] = useState(null);
+  const [localSrc, setLocalSrc] = useState(null);
+  const [localErr, setLocalErr] = useState("");
+
+  // Restore a previously chosen local folder.
+  useEffect(() => {
+    if (!localFolderSupported()) return;
+    idbGet().then(h => { if (h) setLocalRoot(h); }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    setStatus("checking");
+    let blobUrl = null;
+    setStatus("checking"); setLocalSrc(null); setLocalErr("");
     if (!src) { setStatus("missing"); return; }
     fetch(src, { method: "HEAD" })
-      .then(res => { if (!cancelled) setStatus(res.ok ? "found" : "missing"); })
-      .catch(() => { if (!cancelled) setStatus("missing"); });
-    return () => { cancelled = true; };
-  }, [src]);
+      .then(res => res.ok ? "found" : "missing")
+      .catch(() => "missing")
+      .then(async (st) => {
+        if (cancelled) return;
+        if (st === "found") { setStatus("found"); return; }
+        if (localRoot && cur?.rel) {
+          try {
+            if ((await localRoot.queryPermission({ mode: "read" })) === "granted") {
+              blobUrl = await readLocalMaterial(localRoot, cur.rel);
+              if (!cancelled) { setLocalSrc(blobUrl); setStatus("found"); }
+              return;
+            }
+            setLocalErr("Permission needed — click the button to re-allow access to your folder.");
+          } catch { setLocalErr("That file wasn't found in the folder you picked."); }
+        }
+        if (!cancelled) setStatus("missing");
+      });
+    return () => { cancelled = true; if (blobUrl) URL.revokeObjectURL(blobUrl); };
+  }, [src, localRoot]);
+
+  const pickFolder = async () => {
+    try {
+      const h = localRoot || await window.showDirectoryPicker({ id: "tsa-material", mode: "read" });
+      if ((await h.requestPermission({ mode: "read" })) !== "granted") return;
+      await idbSet(h);
+      setLocalRoot(h);
+      setLocalErr("");
+      setStatus("checking"); // re-run the lookup with the permitted handle
+      setLocalSrc(null);
+      try { setLocalSrc(await readLocalMaterial(h, cur.rel)); setStatus("found"); }
+      catch { setLocalErr("That file wasn't found in the folder you picked — choose the public/material folder."); setStatus("missing"); }
+    } catch { /* picker cancelled */ }
+  };
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
@@ -8979,11 +9042,23 @@ function MaterialViewer({ files, backLabel, onBack }) {
       {files.length > 0 && status === "checking" && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
       {files.length > 0 && status === "missing" && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-surface p-5 text-sm text-slate-500">
-          Couldn't load <Mono>{cur.label}</Mono> — the file may be missing from <Mono>public/material</Mono>.
+          Couldn't load <Mono>{cur.label}</Mono> — the file isn't deployed with this site.
+          {localFolderSupported() ? (
+            <div className="mt-3">
+              <button onClick={pickFolder}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                <FileText size={14} /> {localRoot ? "Re-allow access to material folder" : "Choose local material folder"}
+              </button>
+              <p className="mt-2 text-xs">Pick the <Mono>public/material</Mono> folder on this computer. The browser remembers it; files are read locally and never uploaded.</p>
+              {localErr && <p className="mt-1 text-xs text-rose-600">{localErr}</p>}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs">Opening a local folder needs Chrome or Edge on desktop.</p>
+          )}
         </div>
       )}
       {files.length > 0 && status === "found" && (
-        <iframe src={src} title={cur.label}
+        <iframe src={localSrc || src} title={cur.label}
           className={`mt-4 w-full rounded-xl border border-slate-200 ${isFullscreen ? "flex-1" : ""}`}
           style={isFullscreen ? undefined : { height: "80vh" }} />
       )}
